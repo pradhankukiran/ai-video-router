@@ -41,16 +41,27 @@ export async function* runSession(
   const q = query({ prompt: input.message, options });
   const iter = q[Symbol.asyncIterator]();
 
-  const onAbort = () => {
-    // Fire-and-forget; SDK resources are released on the next tick.
+  const shutdown = () => {
+    // Prefer the SDK's interrupt() control request because it actually
+    // shuts down the underlying subprocess; iter.return?.() only
+    // short-circuits the async generator on our side. The d.ts notes
+    // interrupt is "only supported when streaming input/output is
+    // used" — for a plain-string prompt it may reject with an
+    // unsupported-subtype error — so we swallow any rejection and
+    // still release the iterator as a fallback.
+    if (typeof q.interrupt === "function") {
+      void Promise.resolve(q.interrupt()).catch(() => {
+        /* unsupported or already closed */
+      });
+    }
     void iter.return?.(undefined);
   };
   if (input.signal) {
     if (input.signal.aborted) {
-      void iter.return?.(undefined);
+      shutdown();
       return;
     }
-    input.signal.addEventListener("abort", onAbort, { once: true });
+    input.signal.addEventListener("abort", shutdown, { once: true });
   }
 
   try {
@@ -69,6 +80,6 @@ export async function* runSession(
       yield msg;
     }
   } finally {
-    input.signal?.removeEventListener("abort", onAbort);
+    input.signal?.removeEventListener("abort", shutdown);
   }
 }
