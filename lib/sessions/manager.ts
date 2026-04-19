@@ -14,26 +14,61 @@ export interface RunSessionInput {
   signal?: AbortSignal;
 }
 
-const DEFAULT_ALLOWED_TOOLS = ["Read", "Edit", "Write", "Bash", "Glob", "Grep"];
+const BASE_ALLOWED_TOOLS = ["Read", "Edit", "Write", "Bash", "Glob", "Grep"];
+const STRICT_ALLOWED_TOOLS = ["Read", "Edit", "Write", "Glob", "Grep"]; // no Bash
 
 /**
  * Tools whose inputs carry a `file_path` we can sandbox. We resolve the
  * path against `projectRoot` and deny anything that escapes it.
- *
- * Known limitation: Bash commands receive raw shell strings and are
- * NOT sandboxed here. An assistant-authored `bash -c "cat /etc/passwd"`
- * would still succeed. We accept this for now because Bash commands
- * legitimately need /tmp, $HOME/.cache, and pnpm's global store. If
- * Bash isolation becomes a requirement, swap in `bubblewrap` / a
- * per-project container at the spawn layer.
  */
 const PATH_SANDBOXED_TOOLS = new Set(["Read", "Edit", "Write"]);
+
+/**
+ * Best-effort denial patterns for Bash commands that reference obviously
+ * sensitive paths outside the project. This is a defense-in-depth layer, NOT
+ * a real sandbox — shell is Turing-complete and an adversarial agent can
+ * trivially evade these via variable expansion, encoding, or chained
+ * redirection. For hard isolation, set `AVR_STRICT=1` (drops Bash entirely)
+ * or wrap the spawn layer in bwrap/firejail at a future phase.
+ */
+const BASH_DENY_PATTERNS: RegExp[] = [
+  /(^|[\s=;&|`$(])\/etc\b/,
+  /(^|[\s=;&|`$(])\/root\b/,
+  /(^|[\s=;&|`$(])\/proc\b/,
+  /(^|[\s=;&|`$(])\/sys\b/,
+  /(^|[\s=;&|`$(])\/boot\b/,
+  /\/var\/(log|lib|spool)\b/,
+  /(~|\$HOME|\$\{HOME\})\/?\.ssh\b/,
+  /(~|\$HOME|\$\{HOME\})\/?\.aws\b/,
+  /(~|\$HOME|\$\{HOME\})\/?\.gnupg\b/,
+  /\bauthorized_keys\b/,
+  /\bid_(rsa|ed25519|ecdsa|dsa)\b/,
+  /\brm\s+-rf\s+\/(?!\S*\.ai-video-router)/, // rm -rf / but not inside the project data dir
+];
+
+function isStrictMode(): boolean {
+  const v = process.env.AVR_STRICT;
+  return v === "1" || v?.toLowerCase() === "true";
+}
 
 function makeCanUseTool(projectRoot: string): CanUseTool {
   const rootWithSep = projectRoot.endsWith(path.sep)
     ? projectRoot
     : projectRoot + path.sep;
   return async (toolName, input): Promise<PermissionResult> => {
+    if (toolName === "Bash") {
+      const command = typeof input.command === "string" ? input.command : "";
+      for (const re of BASH_DENY_PATTERNS) {
+        if (re.test(command)) {
+          return {
+            behavior: "deny",
+            message: `Bash: command references a path outside the project sandbox (matched ${re.source})`,
+          };
+        }
+      }
+      return { behavior: "allow" };
+    }
+
     if (!PATH_SANDBOXED_TOOLS.has(toolName)) {
       return { behavior: "allow" };
     }
@@ -79,7 +114,7 @@ export async function* runSession(
 
   const options: Options = {
     cwd: project.path,
-    allowedTools: DEFAULT_ALLOWED_TOOLS,
+    allowedTools: isStrictMode() ? STRICT_ALLOWED_TOOLS : BASE_ALLOWED_TOOLS,
     settingSources: [],
     canUseTool: makeCanUseTool(project.path),
     ...(project.session_id ? { resume: project.session_id } : {}),
