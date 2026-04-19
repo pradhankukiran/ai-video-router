@@ -16,12 +16,13 @@ export async function* parseSseStream<T>(
       if (done) break;
       buf += decoder.decode(value, { stream: true });
 
-      let splitIdx: number;
-      while ((splitIdx = buf.indexOf("\n\n")) !== -1) {
-        const frame = buf.slice(0, splitIdx);
-        buf = buf.slice(splitIdx + 2);
+      const frameSep = /\r?\n\r?\n/;
+      let match: RegExpExecArray | null;
+      while ((match = frameSep.exec(buf)) !== null) {
+        const frame = buf.slice(0, match.index);
+        buf = buf.slice(match.index + match[0].length);
         const dataLine = frame
-          .split("\n")
+          .split(/\r?\n/)
           .find((l) => l.startsWith("data: "));
         if (!dataLine) continue;
         try {
