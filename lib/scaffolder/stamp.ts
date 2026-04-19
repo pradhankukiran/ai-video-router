@@ -39,19 +39,30 @@ export async function scaffold(input: ScaffoldInput): Promise<ScaffoldResult> {
   const driver = getDriver(input.library);
   const projectPath = ensureProjectDir(id);
 
-  await copyDir(driver.templateDir, projectPath);
-  await driver.install(projectPath);
+  try {
+    await copyDir(driver.templateDir, projectPath);
+    await driver.install(projectPath);
+  } catch (err) {
+    // Roll back the half-stamped directory so a failed install leaves no
+    // orphan on disk. The API surface sees a clean 500.
+    await fsp.rm(projectPath, { recursive: true, force: true });
+    throw err;
+  }
 
-  const project = createProject({
-    id,
-    title: input.title,
-    library: input.library,
-    paradigm: input.paradigm,
-    prompt: input.prompt,
-    path: projectPath,
-  });
-
-  return { project };
+  try {
+    const project = createProject({
+      id,
+      title: input.title,
+      library: input.library,
+      paradigm: input.paradigm,
+      prompt: input.prompt,
+      path: projectPath,
+    });
+    return { project };
+  } catch (err) {
+    await fsp.rm(projectPath, { recursive: true, force: true });
+    throw err;
+  }
 }
 
 /**
