@@ -53,6 +53,7 @@ export function ChatPanel({
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const pendingAbortRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSentRef = useRef(false);
 
   useLayoutEffect(() => {
@@ -95,11 +96,23 @@ export function ChatPanel({
     setHasNewBelow(false);
   }, []);
 
-  // Abort any in-flight stream on unmount so a route change doesn't leak
-  // server-side SSE handlers.
+  // On (re-)mount, cancel any pending abort scheduled by a prior cleanup.
+  // React strict-mode in dev runs mount → cleanup → mount, which would
+  // otherwise kill the auto-send fetch we just started. Debouncing the
+  // abort lets the remount rescue the stream; a real unmount (route
+  // change, tab close) still aborts after the grace window.
   useEffect(() => {
+    if (pendingAbortRef.current) {
+      clearTimeout(pendingAbortRef.current);
+      pendingAbortRef.current = null;
+    }
     return () => {
-      abortRef.current?.abort();
+      const ctrl = abortRef.current;
+      if (!ctrl) return;
+      pendingAbortRef.current = setTimeout(() => {
+        ctrl.abort();
+        pendingAbortRef.current = null;
+      }, 150);
     };
   }, []);
 
