@@ -36,6 +36,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   const [entries, setEntries] = useState<ChatEntry[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [hasNewBelow, setHasNewBelow] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -54,8 +55,31 @@ export function ChatPanel({ projectId }: { projectId: string }) {
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     if (distanceFromBottom <= 80) {
       el.scrollTo({ top: el.scrollHeight });
+      setHasNewBelow(false);
+    } else {
+      setHasNewBelow(true);
     }
   }, [entries]);
+
+  // Clear the "new activity" pill when the user scrolls back near the bottom.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const distanceFromBottom =
+        el.scrollHeight - el.scrollTop - el.clientHeight;
+      if (distanceFromBottom <= 80) setHasNewBelow(false);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    setHasNewBelow(false);
+  }, []);
 
   // Abort any in-flight stream on unmount so a route change doesn't leak
   // server-side SSE handlers.
@@ -123,32 +147,43 @@ export function ChatPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div
-        ref={scrollRef}
-        aria-live="polite"
-        aria-relevant="additions"
-        className="flex-1 space-y-2 overflow-y-auto px-4 py-3"
-      >
-        {entries.length === 0 ? (
-          <div className="py-8 text-center text-sm">
-            <p className="text-ink-muted">
-              Ask Claude Code to edit your project.
-            </p>
-            <p className="mt-2 text-xs text-ink-faint">
-              Try: &ldquo;Shorten the title to 60px and make the subtitle
-              italic.&rdquo;
-            </p>
-          </div>
-        ) : (
-          entries.map((e) => (
-            <EntryRow
-              key={e.id}
-              entry={e}
-              onDismiss={() =>
-                setEntries((es) => es.filter((x) => x.id !== e.id))
-              }
-            />
-          ))
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={scrollRef}
+          aria-live="polite"
+          aria-relevant="additions"
+          className="h-full space-y-2 overflow-y-auto px-4 py-3"
+        >
+          {entries.length === 0 ? (
+            <div className="py-8 text-center text-sm">
+              <p className="text-ink-muted">
+                Ask Claude Code to edit your project.
+              </p>
+              <p className="mt-2 text-xs text-ink-faint">
+                Try: &ldquo;Shorten the title to 60px and make the subtitle
+                italic.&rdquo;
+              </p>
+            </div>
+          ) : (
+            entries.map((e) => (
+              <EntryRow
+                key={e.id}
+                entry={e}
+                onDismiss={() =>
+                  setEntries((es) => es.filter((x) => x.id !== e.id))
+                }
+              />
+            ))
+          )}
+        </div>
+        {hasNewBelow && (
+          <button
+            type="button"
+            onClick={scrollToBottom}
+            className="absolute bottom-3 right-3 border border-line bg-surface px-2 py-1 text-[11px] text-ink shadow-none hover:bg-surface-subtle"
+          >
+            ↓ new activity
+          </button>
         )}
       </div>
       <form
