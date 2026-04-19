@@ -21,7 +21,7 @@ export default function RootLayout({
       lang="en"
       className={`${GeistSans.variable} ${GeistMono.variable}`}
     >
-      <body className="min-h-dvh bg-surface text-ink font-sans">
+      <body className="min-h-dvh bg-surface text-ink">
         <TooltipProvider delayDuration={200}>
           {children}
           <CommandPalette />
