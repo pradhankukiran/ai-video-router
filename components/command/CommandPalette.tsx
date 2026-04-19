@@ -39,6 +39,14 @@ export function CommandPalette() {
 
   useCommandShortcut(useCallback(() => setOpen((o) => !o), []));
 
+  // Also listen for programmatic opens fired by `<CommandTrigger>` buttons.
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener("avr:open-command-palette", onOpen);
+    return () =>
+      window.removeEventListener("avr:open-command-palette", onOpen);
+  }, []);
+
   // Fetch recent projects when opening so the "Projects" group is live.
   useEffect(() => {
     if (!open) return;
