@@ -1,9 +1,11 @@
 import { z } from "zod";
-import { parseJsonBody } from "@/lib/http";
+import { jsonError, parseJsonBody } from "@/lib/http";
 import { runSession } from "@/lib/sessions/manager";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const idSchema = z.string().uuid();
 
 const bodySchema = z.object({
   message: z.string().min(1).max(20_000),
@@ -15,6 +17,8 @@ interface Ctx {
 
 export async function POST(req: Request, { params }: Ctx) {
   const { id } = await params;
+  if (!idSchema.safeParse(id).success) return jsonError(400, "Invalid id");
+
   const body = await parseJsonBody(req, bodySchema);
   if (body instanceof Response) return body;
 

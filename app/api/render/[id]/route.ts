@@ -1,7 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { getDriver } from "@/lib/drivers";
+import { jsonError } from "@/lib/http";
 import { ensureProjectRendersDir } from "@/lib/paths";
 import { getProject } from "@/lib/queries/projects";
 import {
@@ -14,23 +16,25 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const idSchema = z.string().uuid();
+
 interface Ctx {
   params: Promise<{ id: string }>;
 }
 
 export async function GET(_req: Request, { params }: Ctx) {
   const { id } = await params;
+  if (!idSchema.safeParse(id).success) return jsonError(400, "Invalid id");
   return NextResponse.json({ renders: listRenders(id) });
 }
 
 export async function POST(req: Request, { params }: Ctx) {
   const { id } = await params;
+  if (!idSchema.safeParse(id).success) return jsonError(400, "Invalid id");
+
   const project = getProject(id);
   if (!project) {
-    return new Response(JSON.stringify({ error: "Project not found" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonError(404, "Project not found");
   }
 
   const driver = getDriver(project.library);
