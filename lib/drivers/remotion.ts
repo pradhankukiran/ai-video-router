@@ -25,9 +25,19 @@ export const remotionDriver: VideoDriver = {
 
   async startPreview(projectPath): Promise<PreviewHandle> {
     const port = await findFreePort();
+    // Explicit --host 127.0.0.1 so the studio never binds 0.0.0.0 on
+    // Remotion versions that default to all-interfaces.
     const proc = spawn(
       "pnpm",
-      ["exec", "remotion", "studio", "--port", String(port)],
+      [
+        "exec",
+        "remotion",
+        "studio",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        String(port),
+      ],
       {
         cwd: projectPath,
         stdio: ["ignore", "pipe", "pipe"],

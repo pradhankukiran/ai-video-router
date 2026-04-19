@@ -65,17 +65,25 @@ export function ProjectActions({ projectId }: { projectId: string }) {
       ? "Click again to confirm"
       : "Delete project";
 
+  const announcement = deleting
+    ? "Deleting project"
+    : armed
+      ? "Delete armed, click again to confirm. Auto-disarms in 5 seconds."
+      : "";
+
   return (
     <div className="border-t border-line px-3 py-3 text-xs">
       <Button
         variant="danger"
         onClick={onClick}
         disabled={deleting}
-        aria-live="polite"
         className="w-full"
       >
         {label}
       </Button>
+      <span className="sr-only" aria-live="polite">
+        {announcement}
+      </span>
       {armed && !deleting && (
         <p className="mt-1 text-ink-faint">
           Scaffolded files on disk stay under ~/.ai-video-router/projects/.
