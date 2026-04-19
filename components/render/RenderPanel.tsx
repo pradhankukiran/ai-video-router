@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { parseSseStream } from "@/lib/sse";
 import { Alert } from "@/components/ui/Alert";
 
@@ -33,6 +33,7 @@ export function RenderPanel({ projectId }: { projectId: string }) {
   const [renders, setRenders] = useState<RenderRow[]>([]);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<RenderProgress | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/render/${projectId}`);
@@ -45,14 +46,22 @@ export function RenderPanel({ projectId }: { projectId: string }) {
     void refresh();
   }, [refresh]);
 
+  const cancel = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
   const start = useCallback(async () => {
     if (running) return;
     setRunning(true);
     setProgress({ frame: 0, totalFrames: 0, error: null, doneUrl: null });
+    const controller = new AbortController();
+    abortRef.current = controller;
+    let settled = false;
     try {
       const res = await fetch(`/api/render/${projectId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-avr": "1" },
+        signal: controller.signal,
       });
       if (!res.ok || !res.body) {
         setProgress({
@@ -61,6 +70,7 @@ export function RenderPanel({ projectId }: { projectId: string }) {
           error: `HTTP ${res.status}`,
           doneUrl: null,
         });
+        settled = true;
         return;
       }
       for await (const ev of parseSseStream<WireEvent>(res.body)) {
@@ -80,18 +90,45 @@ export function RenderPanel({ projectId }: { projectId: string }) {
               ? { ...p, error: ev.message }
               : { frame: 0, totalFrames: 0, error: ev.message, doneUrl: null },
           );
-        } else if (ev.type === "settled" && ev.status === "done") {
-          setProgress((p) =>
-            p
-              ? {
-                  ...p,
-                  doneUrl: `/api/renders/${ev.renderId}/file`,
-                }
-              : null,
-          );
+        } else if (ev.type === "settled") {
+          settled = true;
+          if (ev.status === "done") {
+            setProgress((p) =>
+              p
+                ? { ...p, doneUrl: `/api/renders/${ev.renderId}/file` }
+                : null,
+            );
+          }
         }
       }
+    } catch (err: unknown) {
+      if (controller.signal.aborted) {
+        settled = true;
+        setProgress((p) =>
+          p ? { ...p, error: "Render cancelled" } : null,
+        );
+      } else {
+        const message = err instanceof Error ? err.message : String(err);
+        setProgress((p) =>
+          p
+            ? { ...p, error: message }
+            : { frame: 0, totalFrames: 0, error: message, doneUrl: null },
+        );
+      }
     } finally {
+      if (!settled) {
+        setProgress((p) =>
+          p
+            ? { ...p, error: "Render stream ended unexpectedly" }
+            : {
+                frame: 0,
+                totalFrames: 0,
+                error: "Render stream ended unexpectedly",
+                doneUrl: null,
+              },
+        );
+      }
+      abortRef.current = null;
       setRunning(false);
       await refresh();
     }
@@ -103,14 +140,23 @@ export function RenderPanel({ projectId }: { projectId: string }) {
         <p className="text-[10px] uppercase tracking-wider text-ink-faint">
           render
         </p>
-        <button
-          type="button"
-          onClick={() => void start()}
-          disabled={running}
-          className="border border-accent bg-accent px-3 py-1 text-xs text-accent-ink disabled:opacity-50"
-        >
-          {running ? "Rendering…" : "Render MP4"}
-        </button>
+        {running ? (
+          <button
+            type="button"
+            onClick={cancel}
+            className="border border-line bg-surface px-3 py-1 text-xs text-ink hover:bg-surface-subtle"
+          >
+            Cancel
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void start()}
+            className="border border-accent bg-accent px-3 py-1 text-xs text-accent-ink"
+          >
+            Render MP4
+          </button>
+        )}
       </div>
 
       {progress && (
