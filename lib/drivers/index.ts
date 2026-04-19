@@ -1,10 +1,12 @@
 import { hyperframesDriver } from "./hyperframes";
+import { motionCanvasDriver } from "./motion-canvas";
 import { remotionDriver } from "./remotion";
 import type { LibraryKey, VideoDriver } from "./types";
 
 export const drivers: Partial<Record<LibraryKey, VideoDriver>> = {
   remotion: remotionDriver,
   hyperframes: hyperframesDriver,
+  "motion-canvas": motionCanvasDriver,
 };
 
 export function getDriver(key: LibraryKey): VideoDriver {
