@@ -1,12 +1,6 @@
-import { spawn } from "node:child_process";
 import path from "node:path";
-import {
-  buildChildEnv,
-  killTree,
-  makeEventStream,
-  runToCompletion,
-} from "./_process";
-import type { PreviewHandle, RenderEvent, VideoDriver } from "./types";
+import { runToCompletion, spawnRender } from "./_process";
+import type { PreviewHandle, VideoDriver } from "./types";
 
 const TEMPLATE_DIR = path.join(process.cwd(), "templates", "editly");
 
@@ -25,63 +19,19 @@ export const editlyDriver: VideoDriver = {
     throw new Error("preview not supported");
   },
 
-  render(projectPath, outPath, opts): AsyncIterable<RenderEvent> {
-    const { push, end, stream } = makeEventStream<RenderEvent>();
-
-    if (opts?.signal?.aborted) {
-      push({ type: "error", message: "Aborted" });
-      end();
-      return stream;
-    }
-
-    const proc = spawn(
-      "pnpm",
-      ["exec", "editly", "video.json5", "--out", outPath],
-      {
-        cwd: projectPath,
-        stdio: ["ignore", "pipe", "pipe"],
-        detached: true,
-        env: buildChildEnv(),
-      },
-    );
-
-    const onData = (chunk: Buffer) => {
-      const text = chunk.toString();
-      push({ type: "log", line: text });
-      // editly prints lines like "Clip 1/3 progress: 42%"
-      const m = /progress:\s*(\d+)%/i.exec(text);
-      if (m?.[1]) {
-        const pct = Number(m[1]);
-        push({ type: "progress", frame: pct, totalFrames: 100 });
-      }
-    };
-
-    proc.stdout?.on("data", onData);
-    proc.stderr?.on("data", onData);
-
-    const onAbort = () => {
-      void killTree(proc);
-    };
-    opts?.signal?.addEventListener("abort", onAbort, { once: true });
-
-    proc.on("error", (err) => {
-      push({ type: "error", message: err.message });
-      end();
+  render(projectPath, outPath, opts) {
+    return spawnRender({
+      cmd: "pnpm",
+      args: ["exec", "editly", "video.json5", "--out", outPath],
+      cwd: projectPath,
+      outPath,
+      errorLabel: "editly",
+      // Editly emits lines like "Clip 1/3 progress: 42%"; the driver reports
+      // progress as a percentage against a 100-unit total.
+      progressRe: /progress:\s*(\d+)%/i,
+      progressFromMatch: (m) =>
+        m[1] ? { frame: Number(m[1]), totalFrames: 100 } : null,
+      signal: opts?.signal,
     });
-
-    proc.on("exit", (code) => {
-      opts?.signal?.removeEventListener("abort", onAbort);
-      if (opts?.signal?.aborted) {
-        push({ type: "error", message: "Aborted" });
-      } else if (code === 0) push({ type: "done", outPath });
-      else
-        push({
-          type: "error",
-          message: `editly exited with code ${code}`,
-        });
-      end();
-    });
-
-    return stream;
   },
 };
