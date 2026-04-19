@@ -1,0 +1,22 @@
+import { remotionDriver } from "./remotion";
+import type { LibraryKey, VideoDriver } from "./types";
+
+export const drivers: Partial<Record<LibraryKey, VideoDriver>> = {
+  remotion: remotionDriver,
+};
+
+export function getDriver(key: LibraryKey): VideoDriver {
+  const d = drivers[key];
+  if (!d) {
+    throw new Error(
+      `No driver registered for library "${key}". Available: ${availableLibraries().join(", ")}`,
+    );
+  }
+  return d;
+}
+
+export function availableLibraries(): LibraryKey[] {
+  return Object.entries(drivers)
+    .filter(([, d]) => d != null)
+    .map(([k]) => k as LibraryKey);
+}
