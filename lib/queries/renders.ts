@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { getDb } from "../db";
 
 export type RenderStatus = "running" | "done" | "error";
-export type RenderKind = "export" | "preview";
+export type RenderKind = "export";
 
 export interface RenderRow {
   id: string;
