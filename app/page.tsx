@@ -13,13 +13,13 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-6xl px-8 py-12">
-      <header className="flex items-start justify-between gap-4 border-b border-border pb-6">
+      <header className="flex items-start justify-between gap-4 border-b border-border pb-8">
         <div>
-          <Label>ai-video-router</Label>
-          <h1 className="mt-2 text-display font-semibold text-text-primary">
+          <Label>ai-video-router · v0.1</Label>
+          <h1 className="mt-3 font-sans text-display font-semibold tracking-tight text-text-primary">
             Describe a video.
           </h1>
-          <p className="mt-2 max-w-xl text-sm text-text-secondary">
+          <p className="mt-3 max-w-xl font-sans text-base text-text-secondary">
             Route the intent to the right code-based video library, scaffold
             it, then iterate with Claude Code.
           </p>
@@ -27,16 +27,24 @@ export default function Home() {
         <CommandTrigger className="mt-1 shrink-0" />
       </header>
 
-      <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <PromptForm />
+      <section className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div>
+          <Label index={1} className="mb-3 block">
+            prompt
+          </Label>
+          <PromptForm />
+        </div>
         <aside className="min-w-0">
+          <Label index={2} className="mb-3 block">
+            libraries
+          </Label>
           <LibraryReferencePanel />
         </aside>
       </section>
 
-      <section className="mt-10">
-        <div className="mb-3 flex items-center justify-between">
-          <Label>projects</Label>
+      <section className="mt-12 border-t border-border pt-8">
+        <div className="mb-4 flex items-center justify-between">
+          <Label index={3}>projects</Label>
           <span className="font-mono text-micro text-text-tertiary">
             {projects.length}
           </span>
