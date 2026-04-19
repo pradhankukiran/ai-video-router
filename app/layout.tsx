@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
+import { CommandPalette } from "@/components/command/CommandPalette";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import "./globals.css";
 
@@ -21,7 +22,10 @@ export default function RootLayout({
       className={`${GeistSans.variable} ${GeistMono.variable}`}
     >
       <body className="min-h-dvh bg-surface text-ink font-sans">
-        <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+        <TooltipProvider delayDuration={200}>
+          {children}
+          <CommandPalette />
+        </TooltipProvider>
       </body>
     </html>
   );
