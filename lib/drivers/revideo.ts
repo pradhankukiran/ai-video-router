@@ -1,7 +1,9 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import {
+  buildChildEnv,
   findFreePort,
+  killTree,
   makeEventStream,
   runToCompletion,
   waitForReady,
@@ -26,31 +28,41 @@ export const revideoDriver: VideoDriver = {
     const proc = spawn(
       "pnpm",
       ["exec", "revideo", "serve", "--port", String(port)],
-      { cwd: projectPath, stdio: ["ignore", "pipe", "pipe"] },
+      {
+        cwd: projectPath,
+        stdio: ["ignore", "pipe", "pipe"],
+        detached: true,
+        env: buildChildEnv(),
+      },
     );
     try {
       await waitForReady(proc, (text) =>
         /localhost:|ready in|server running/i.test(text),
       );
     } catch (err) {
-      proc.kill("SIGTERM");
+      await killTree(proc);
       throw err;
     }
     return {
       url: `http://127.0.0.1:${port}`,
       kill: async () => {
-        proc.kill("SIGTERM");
+        await killTree(proc);
       },
     };
   },
 
-  render(projectPath, outPath): AsyncIterable<RenderEvent> {
+  render(projectPath, outPath, opts): AsyncIterable<RenderEvent> {
     const { push, end, stream } = makeEventStream<RenderEvent>();
 
     const proc = spawn(
       "pnpm",
       ["exec", "revideo", "render", "--output", outPath],
-      { cwd: projectPath, stdio: ["ignore", "pipe", "pipe"] },
+      {
+        cwd: projectPath,
+        stdio: ["ignore", "pipe", "pipe"],
+        detached: true,
+        env: buildChildEnv(),
+      },
     );
 
     const onData = (chunk: Buffer) => {
@@ -69,13 +81,21 @@ export const revideoDriver: VideoDriver = {
     proc.stdout?.on("data", onData);
     proc.stderr?.on("data", onData);
 
+    const onAbort = () => {
+      void killTree(proc);
+    };
+    opts?.signal?.addEventListener("abort", onAbort, { once: true });
+
     proc.on("error", (err) => {
       push({ type: "error", message: err.message });
       end();
     });
 
     proc.on("exit", (code) => {
-      if (code === 0) push({ type: "done", outPath });
+      opts?.signal?.removeEventListener("abort", onAbort);
+      if (opts?.signal?.aborted) {
+        push({ type: "error", message: "Aborted" });
+      } else if (code === 0) push({ type: "done", outPath });
       else
         push({
           type: "error",

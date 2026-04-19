@@ -1,6 +1,11 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { makeEventStream, runToCompletion } from "./_process";
+import {
+  buildChildEnv,
+  killTree,
+  makeEventStream,
+  runToCompletion,
+} from "./_process";
 import type { PreviewHandle, RenderEvent, VideoDriver } from "./types";
 
 const TEMPLATE_DIR = path.join(process.cwd(), "templates", "editly");
@@ -20,13 +25,18 @@ export const editlyDriver: VideoDriver = {
     throw new Error("preview not supported");
   },
 
-  render(projectPath, outPath): AsyncIterable<RenderEvent> {
+  render(projectPath, outPath, opts): AsyncIterable<RenderEvent> {
     const { push, end, stream } = makeEventStream<RenderEvent>();
 
     const proc = spawn(
       "pnpm",
       ["exec", "editly", "video.json5", "--out", outPath],
-      { cwd: projectPath, stdio: ["ignore", "pipe", "pipe"] },
+      {
+        cwd: projectPath,
+        stdio: ["ignore", "pipe", "pipe"],
+        detached: true,
+        env: buildChildEnv(),
+      },
     );
 
     const onData = (chunk: Buffer) => {
@@ -43,13 +53,21 @@ export const editlyDriver: VideoDriver = {
     proc.stdout?.on("data", onData);
     proc.stderr?.on("data", onData);
 
+    const onAbort = () => {
+      void killTree(proc);
+    };
+    opts?.signal?.addEventListener("abort", onAbort, { once: true });
+
     proc.on("error", (err) => {
       push({ type: "error", message: err.message });
       end();
     });
 
     proc.on("exit", (code) => {
-      if (code === 0) push({ type: "done", outPath });
+      opts?.signal?.removeEventListener("abort", onAbort);
+      if (opts?.signal?.aborted) {
+        push({ type: "error", message: "Aborted" });
+      } else if (code === 0) push({ type: "done", outPath });
       else
         push({
           type: "error",

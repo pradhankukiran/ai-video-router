@@ -1,7 +1,9 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import {
+  buildChildEnv,
   findFreePort,
+  killTree,
   runToCompletion,
   waitForReady,
 } from "./_process";
@@ -25,18 +27,23 @@ export const motionCanvasDriver: VideoDriver = {
     const proc = spawn(
       "pnpm",
       ["exec", "vite", "--port", String(port), "--host", "127.0.0.1"],
-      { cwd: projectPath, stdio: ["ignore", "pipe", "pipe"] },
+      {
+        cwd: projectPath,
+        stdio: ["ignore", "pipe", "pipe"],
+        detached: true,
+        env: buildChildEnv(),
+      },
     );
     try {
       await waitForReady(proc, (text) => /localhost:|ready in/i.test(text));
     } catch (err) {
-      proc.kill("SIGTERM");
+      await killTree(proc);
       throw err;
     }
     return {
       url: `http://127.0.0.1:${port}`,
       kill: async () => {
-        proc.kill("SIGTERM");
+        await killTree(proc);
       },
     };
   },

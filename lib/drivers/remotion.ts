@@ -1,7 +1,9 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import {
+  buildChildEnv,
   findFreePort,
+  killTree,
   makeEventStream,
   runToCompletion,
   waitForReady,
@@ -26,7 +28,12 @@ export const remotionDriver: VideoDriver = {
     const proc = spawn(
       "pnpm",
       ["exec", "remotion", "studio", "--port", String(port)],
-      { cwd: projectPath, stdio: ["ignore", "pipe", "pipe"] },
+      {
+        cwd: projectPath,
+        stdio: ["ignore", "pipe", "pipe"],
+        detached: true,
+        env: buildChildEnv(),
+      },
     );
 
     try {
@@ -34,25 +41,30 @@ export const remotionDriver: VideoDriver = {
         /server ready|open your browser|localhost:/i.test(text),
       );
     } catch (err) {
-      proc.kill("SIGTERM");
+      await killTree(proc);
       throw err;
     }
 
     return {
       url: `http://localhost:${port}`,
       kill: async () => {
-        proc.kill("SIGTERM");
+        await killTree(proc);
       },
     };
   },
 
-  render(projectPath, outPath): AsyncIterable<RenderEvent> {
+  render(projectPath, outPath, opts): AsyncIterable<RenderEvent> {
     const { push, end, stream } = makeEventStream<RenderEvent>();
 
     const proc = spawn(
       "pnpm",
       ["exec", "remotion", "render", "Main", outPath],
-      { cwd: projectPath, stdio: ["ignore", "pipe", "pipe"] },
+      {
+        cwd: projectPath,
+        stdio: ["ignore", "pipe", "pipe"],
+        detached: true,
+        env: buildChildEnv(),
+      },
     );
 
     const onData = (chunk: Buffer) => {
@@ -71,14 +83,26 @@ export const remotionDriver: VideoDriver = {
     proc.stdout?.on("data", onData);
     proc.stderr?.on("data", onData);
 
+    const onAbort = () => {
+      void killTree(proc);
+    };
+    opts?.signal?.addEventListener("abort", onAbort, { once: true });
+
     proc.on("error", (err) => {
       push({ type: "error", message: err.message });
       end();
     });
 
     proc.on("exit", (code) => {
-      if (code === 0) push({ type: "done", outPath });
-      else push({ type: "error", message: `remotion render exited with code ${code}` });
+      opts?.signal?.removeEventListener("abort", onAbort);
+      if (opts?.signal?.aborted) {
+        push({ type: "error", message: "Aborted" });
+      } else if (code === 0) push({ type: "done", outPath });
+      else
+        push({
+          type: "error",
+          message: `remotion render exited with code ${code}`,
+        });
       end();
     });
 

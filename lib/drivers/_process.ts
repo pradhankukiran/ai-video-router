@@ -58,7 +58,7 @@ export async function killTree(proc: ChildProcess): Promise<void> {
  */
 export function buildChildEnv(
   extra?: Record<string, string>,
-): Record<string, string> {
+): NodeJS.ProcessEnv {
   const ALLOW = [
     "PATH",
     "HOME",
@@ -70,6 +70,8 @@ export function buildChildEnv(
     "TMPDIR",
   ] as const;
   const SECRET_RE = /API_KEY|TOKEN|SECRET/i;
+  // Writable view — `NodeJS.ProcessEnv` declares NODE_ENV as readonly so we
+  // build the mapping as a plain record and cast once at the end.
   const env: Record<string, string> = {};
   for (const k of ALLOW) {
     const v = process.env[k];
@@ -83,7 +85,7 @@ export function buildChildEnv(
       env[k] = v;
     }
   }
-  return env;
+  return env as NodeJS.ProcessEnv;
 }
 
 export function findFreePort(): Promise<number> {
