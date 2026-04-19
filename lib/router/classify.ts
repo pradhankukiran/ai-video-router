@@ -196,45 +196,25 @@ export const routerOutputSchema = z.object({
 
 export type RouterOutput = z.infer<typeof routerOutputSchema>;
 
-type Provider = "cerebras" | "groq";
+const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
+const DEFAULT_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
 
-interface ProviderConfig {
-  baseURL: string;
-  apiKey: string;
-  model: string;
-}
-
-function resolveProvider(): ProviderConfig {
-  const explicit = (process.env.ROUTER_PROVIDER?.toLowerCase() ??
-    "") as Provider | "";
-  const modelOverride = process.env.ROUTER_MODEL;
-
-  if (explicit === "cerebras" || (!explicit && process.env.CEREBRAS_API_KEY)) {
-    const apiKey = process.env.CEREBRAS_API_KEY;
-    if (!apiKey) throw new Error("CEREBRAS_API_KEY is not set");
-    return {
-      baseURL: "https://api.cerebras.ai/v1",
-      apiKey,
-      model: modelOverride ?? "llama-3.3-70b",
-    };
+function resolveGroqConfig(): { apiKey: string; model: string } {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "Router is not configured. Set GROQ_API_KEY in .env.local.",
+    );
   }
-  if (explicit === "groq" || (!explicit && process.env.GROQ_API_KEY)) {
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) throw new Error("GROQ_API_KEY is not set");
-    return {
-      baseURL: "https://api.groq.com/openai/v1",
-      apiKey,
-      model: modelOverride ?? "llama-3.3-70b-versatile",
-    };
-  }
-  throw new Error(
-    "Router is not configured. Set CEREBRAS_API_KEY or GROQ_API_KEY (or ROUTER_PROVIDER).",
-  );
+  return {
+    apiKey,
+    model: process.env.ROUTER_MODEL ?? DEFAULT_MODEL,
+  };
 }
 
 export async function classifyPrompt(userPrompt: string): Promise<RouterOutput> {
-  const cfg = resolveProvider();
-  const client = new OpenAI({ baseURL: cfg.baseURL, apiKey: cfg.apiKey });
+  const cfg = resolveGroqConfig();
+  const client = new OpenAI({ baseURL: GROQ_BASE_URL, apiKey: cfg.apiKey });
 
   const completion = await client.chat.completions.create({
     model: cfg.model,
