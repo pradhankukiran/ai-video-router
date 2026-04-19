@@ -33,7 +33,12 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom <= 80) {
+      el.scrollTo({ top: el.scrollHeight });
+    }
   }, [entries]);
 
   const cancel = useCallback(() => {
