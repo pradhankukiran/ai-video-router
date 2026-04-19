@@ -226,11 +226,25 @@ export async function classifyPrompt(userPrompt: string): Promise<RouterOutput> 
   const raw = completion.choices[0]?.message.content;
   if (!raw) throw new Error("Router returned no content");
 
-  const parsed = routerOutputSchema.safeParse(JSON.parse(raw));
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.warn("[router] malformed JSON from model:\n", raw);
+    throw new Error(`Router output was not valid JSON: ${reason}`);
+  }
+
+  const parsed = routerOutputSchema.safeParse(json);
   if (!parsed.success) {
-    throw new Error(
-      `Router output failed validation: ${parsed.error.issues.map((i) => i.message).join("; ")}`,
+    console.warn(
+      "[router] schema mismatch. Raw payload:\n",
+      JSON.stringify(json, null, 2),
     );
+    const details = parsed.error.issues
+      .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+      .join("; ");
+    throw new Error(`Router output failed validation: ${details}`);
   }
   return parsed.data;
 }
