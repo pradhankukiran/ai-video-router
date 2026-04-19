@@ -28,6 +28,12 @@ export const editlyDriver: VideoDriver = {
   render(projectPath, outPath, opts): AsyncIterable<RenderEvent> {
     const { push, end, stream } = makeEventStream<RenderEvent>();
 
+    if (opts?.signal?.aborted) {
+      push({ type: "error", message: "Aborted" });
+      end();
+      return stream;
+    }
+
     const proc = spawn(
       "pnpm",
       ["exec", "editly", "video.json5", "--out", outPath],

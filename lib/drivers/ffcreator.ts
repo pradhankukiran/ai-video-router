@@ -28,6 +28,12 @@ export const ffcreatorDriver: VideoDriver = {
   render(projectPath, outPath, opts): AsyncIterable<RenderEvent> {
     const { push, end, stream } = makeEventStream<RenderEvent>();
 
+    if (opts?.signal?.aborted) {
+      push({ type: "error", message: "Aborted" });
+      end();
+      return stream;
+    }
+
     const proc = spawn("pnpm", ["run", "build"], {
       cwd: projectPath,
       stdio: ["ignore", "pipe", "pipe"],
