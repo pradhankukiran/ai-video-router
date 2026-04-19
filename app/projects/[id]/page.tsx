@@ -15,6 +15,14 @@ export default async function ProjectWorkspace({ params }: Props) {
   const project = getProject(id);
   if (!project) notFound();
 
+  // First-turn bootstrap: give Claude Code the user's original video
+  // description plus just enough context to find its way around the
+  // scaffold. Only sent on the very first workspace mount for a project
+  // (detected via the absence of a session_id); resumed sessions skip it.
+  const initialPrompt = project.session_id
+    ? null
+    : `${project.prompt}\n\nThis is a fresh ${project.library} project scaffold with placeholder text. Read the README to understand the structure, then edit the source so the video matches the description above.`;
+
   return (
     <div className="grid h-dvh grid-cols-[minmax(0,1fr)_minmax(0,1.8fr)_280px] divide-x divide-line">
       <section className="flex min-h-0 flex-col">
@@ -27,7 +35,7 @@ export default async function ProjectWorkspace({ params }: Props) {
           </h1>
         </header>
         <div className="min-h-0 flex-1">
-          <ChatPanel projectId={project.id} />
+          <ChatPanel projectId={project.id} initialPrompt={initialPrompt} />
         </div>
       </section>
 

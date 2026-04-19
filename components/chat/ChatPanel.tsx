@@ -32,7 +32,20 @@ type WireEvent =
 let nextLocalId = 0;
 const newId = () => `e${++nextLocalId}`;
 
-export function ChatPanel({ projectId }: { projectId: string }) {
+export function ChatPanel({
+  projectId,
+  initialPrompt,
+}: {
+  projectId: string;
+  /**
+   * When set, the panel auto-sends this as the first user turn so Claude
+   * Code starts editing the scaffold toward the user's original prompt
+   * without the user needing to retype it. Pass `null` for projects that
+   * already have a session_id (i.e. the user has resumed an existing
+   * project and should not have the prompt re-sent).
+   */
+  initialPrompt?: string | null;
+}) {
   const [entries, setEntries] = useState<ChatEntry[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -40,6 +53,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const autoSentRef = useRef(false);
 
   useLayoutEffect(() => {
     const el = textareaRef.current;
@@ -93,57 +107,74 @@ export function ChatPanel({ projectId }: { projectId: string }) {
     abortRef.current?.abort();
   }, []);
 
-  const send = useCallback(async () => {
-    const text = input.trim();
-    if (!text || streaming) return;
-    setInput("");
-    setEntries((es) => [...es, { kind: "user-prompt", id: newId(), text }]);
-    setStreaming(true);
-    const controller = new AbortController();
-    abortRef.current = controller;
-    try {
-      const res = await fetch(`/api/session/${projectId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-avr": "1" },
-        body: JSON.stringify({ message: text }),
-        signal: controller.signal,
-      });
-      if (!res.ok || !res.body) {
-        throw new Error(`session request failed: ${res.status}`);
-      }
-      for await (const ev of parseSseStream<WireEvent>(res.body)) {
-        if (ev.type === "stream-end") {
-          setEntries((es) => [...es, { kind: "stream-end", id: newId() }]);
-        } else if (ev.type === "stream-error") {
+  const sendText = useCallback(
+    async (raw: string) => {
+      const text = raw.trim();
+      if (!text || streaming) return;
+      setEntries((es) => [...es, { kind: "user-prompt", id: newId(), text }]);
+      setStreaming(true);
+      const controller = new AbortController();
+      abortRef.current = controller;
+      try {
+        const res = await fetch(`/api/session/${projectId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-avr": "1" },
+          body: JSON.stringify({ message: text }),
+          signal: controller.signal,
+        });
+        if (!res.ok || !res.body) {
+          throw new Error(`session request failed: ${res.status}`);
+        }
+        for await (const ev of parseSseStream<WireEvent>(res.body)) {
+          if (ev.type === "stream-end") {
+            setEntries((es) => [...es, { kind: "stream-end", id: newId() }]);
+          } else if (ev.type === "stream-error") {
+            setEntries((es) => [
+              ...es,
+              { kind: "stream-error", id: newId(), error: ev.error },
+            ]);
+          } else {
+            setEntries((es) => [
+              ...es,
+              { kind: "sdk", id: newId(), message: ev },
+            ]);
+          }
+        }
+      } catch (err: unknown) {
+        if (controller.signal.aborted) {
           setEntries((es) => [
             ...es,
-            { kind: "stream-error", id: newId(), error: ev.error },
+            { kind: "stream-cancelled", id: newId() },
           ]);
         } else {
+          const message = err instanceof Error ? err.message : String(err);
           setEntries((es) => [
             ...es,
-            { kind: "sdk", id: newId(), message: ev },
+            { kind: "stream-error", id: newId(), error: message },
           ]);
         }
+      } finally {
+        abortRef.current = null;
+        setStreaming(false);
       }
-    } catch (err: unknown) {
-      if (controller.signal.aborted) {
-        setEntries((es) => [
-          ...es,
-          { kind: "stream-cancelled", id: newId() },
-        ]);
-      } else {
-        const message = err instanceof Error ? err.message : String(err);
-        setEntries((es) => [
-          ...es,
-          { kind: "stream-error", id: newId(), error: message },
-        ]);
-      }
-    } finally {
-      abortRef.current = null;
-      setStreaming(false);
-    }
-  }, [input, streaming, projectId]);
+    },
+    [streaming, projectId],
+  );
+
+  const send = useCallback(async () => {
+    const text = input.trim();
+    if (!text) return;
+    setInput("");
+    await sendText(text);
+  }, [input, sendText]);
+
+  // Auto-send the project's original prompt as the first user turn. Guarded
+  // by a ref so React strict-mode's double-invocation doesn't send twice.
+  useEffect(() => {
+    if (!initialPrompt || autoSentRef.current) return;
+    autoSentRef.current = true;
+    void sendText(initialPrompt);
+  }, [initialPrompt, sendText]);
 
   return (
     <div className="flex h-full flex-col">
