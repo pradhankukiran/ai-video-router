@@ -25,22 +25,29 @@ function installReaperOnce(): void {
   if (globalThis.__avr_preview_reaper_installed) return;
   globalThis.__avr_preview_reaper_installed = true;
 
-  const reap = () => {
+  const reap = (): Promise<unknown[]> => {
     const reg = globalThis.__avr_preview_handles;
-    if (!reg) return;
+    if (!reg) return Promise.resolve([]);
+    const pending: Promise<void>[] = [];
     for (const [id, handle] of reg) {
       reg.delete(id);
-      Promise.resolve(handle.kill()).catch(() => {
-        /* already dead */
-      });
+      pending.push(
+        Promise.resolve(handle.kill()).catch(() => {
+          /* already dead */
+        }),
+      );
     }
+    return Promise.allSettled(pending);
   };
 
-  process.on("beforeExit", reap);
+  process.on("beforeExit", () => {
+    void reap();
+  });
   process.on("SIGTERM", () => {
-    reap();
-    // Honour the signal after a small grace window so reap() can fire.
-    setTimeout(() => process.exit(0), 100).unref();
+    // Wait for every handle.kill() to settle before exiting. killTree
+    // itself has a 3s SIGKILL fallback window, so a 100ms setTimeout
+    // was far too aggressive and could strand live child processes.
+    reap().finally(() => process.exit(0));
   });
 }
 
