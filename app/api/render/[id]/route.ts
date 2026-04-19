@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
@@ -12,6 +13,36 @@ import {
   finishRender,
   listRenders,
 } from "@/lib/queries/renders";
+
+/**
+ * Fire-and-forget thumbnail extraction. We grab a single JPEG ~0.5s into the
+ * rendered MP4 and write it alongside as `<outPath>.jpg`. Errors are swallowed
+ * because missing thumbnails aren't user-visible: the landing page falls back
+ * to a placeholder. Requires ffmpeg on PATH — already a render prerequisite.
+ */
+function extractThumbnail(outPath: string): void {
+  const jpg = `${outPath}.jpg`;
+  const proc = spawn(
+    "ffmpeg",
+    [
+      "-y",
+      "-ss",
+      "0.5",
+      "-i",
+      outPath,
+      "-frames:v",
+      "1",
+      "-vf",
+      "scale=480:-1",
+      jpg,
+    ],
+    { stdio: "ignore", detached: true },
+  );
+  proc.on("error", () => {
+    /* ffmpeg not on PATH; skip silently */
+  });
+  proc.unref();
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -115,8 +146,13 @@ export async function POST(req: Request, { params }: Ctx) {
           }
         }
 
-        if (finalPath) finishRender(render.id, finalPath);
-        else failRender(render.id, errorMsg ?? "Unknown error");
+        if (finalPath) {
+          finishRender(render.id, finalPath);
+          // Fire-and-forget ffmpeg thumbnail; landing uses it if present.
+          extractThumbnail(finalPath);
+        } else {
+          failRender(render.id, errorMsg ?? "Unknown error");
+        }
 
         try {
           if (!finalPath && errorMsg) {
