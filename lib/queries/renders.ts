@@ -64,3 +64,10 @@ export function listRenders(projectId: string): RenderRow[] {
     )
     .all(projectId);
 }
+
+export function getRender(renderId: string): RenderRow | null {
+  const row = getDb()
+    .prepare<[string], RenderRow>(`SELECT * FROM renders WHERE id = ?`)
+    .get(renderId);
+  return row ?? null;
+}
