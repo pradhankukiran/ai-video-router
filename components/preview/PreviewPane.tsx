@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
-import { Badge } from "@/components/ui/Badge";
+import { AsciiStatus } from "@/components/ui/AsciiStatus";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Label";
 import { Spinner } from "@/components/ui/Spinner";
-import { StatusDot } from "@/components/ui/StatusDot";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 type PreviewState =
@@ -103,34 +102,30 @@ export function PreviewPane({ projectId }: { projectId: string }) {
   return (
     <div className="flex h-full flex-col">
       <header className="flex items-center gap-2 border-b border-border px-3 py-2">
-        <div className="flex min-w-0 items-center gap-2 text-xs">
-          <StatusDot
-            tone={
-              state.status === "running"
-                ? "success"
-                : state.status === "loading"
-                  ? "accent"
-                  : state.status === "error"
-                    ? "danger"
-                    : "idle"
-            }
-            pulse={state.status === "loading"}
-          />
-          <Label>preview</Label>
-          <Badge
+        <div className="flex min-w-0 items-center gap-3 text-xs">
+          <Label index={2}>preview</Label>
+          <AsciiStatus
             tone={
               state.status === "running"
                 ? "success"
                 : state.status === "error"
                   ? "danger"
-                  : "neutral"
+                  : state.status === "loading"
+                    ? "accent"
+                    : "idle"
             }
           >
-            {state.status}
-          </Badge>
+            {state.status === "running"
+              ? "ok"
+              : state.status === "error"
+                ? "!!"
+                : state.status === "loading"
+                  ? "…"
+                  : "idle"}
+          </AsciiStatus>
           {state.status === "running" && (
             <Tooltip content={state.url}>
-              <span className="ml-1 max-w-[280px] truncate font-mono text-micro text-text-tertiary">
+              <span className="max-w-[280px] truncate font-mono text-micro text-text-tertiary">
                 {state.url}
               </span>
             </Tooltip>
