@@ -104,9 +104,15 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         className="flex-1 space-y-2 overflow-y-auto px-4 py-3"
       >
         {entries.length === 0 ? (
-          <p className="py-8 text-center text-sm text-ink-faint">
-            Ask Claude Code to edit your project.
-          </p>
+          <div className="py-8 text-center text-sm">
+            <p className="text-ink-muted">
+              Ask Claude Code to edit your project.
+            </p>
+            <p className="mt-2 text-xs text-ink-faint">
+              Try: &ldquo;Shorten the title to 60px and make the subtitle
+              italic.&rdquo;
+            </p>
+          </div>
         ) : (
           entries.map((e) => <EntryRow key={e.id} entry={e} />)
         )}
