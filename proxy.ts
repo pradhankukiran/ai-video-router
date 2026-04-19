@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * API surface guard.
  *
  * This app is explicitly local, single-user (see README "Auth & ToS note").
- * The middleware enforces two things on /api/* traffic:
+ * The proxy enforces two things on /api/* traffic:
  *
  *   1. Host binding: reject requests that don't target localhost / 127.0.0.1.
  *      Catches the case where someone runs `next dev -H 0.0.0.0` and exposes
@@ -32,7 +32,7 @@ const ALLOWED_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
 const MUTATING_METHODS = new Set(["POST", "DELETE", "PUT", "PATCH"]);
 
-export function middleware(req: NextRequest): NextResponse {
+export function proxy(req: NextRequest): NextResponse {
   const hostname = req.nextUrl.hostname;
   if (!ALLOWED_HOSTS.has(hostname)) {
     return new NextResponse(
