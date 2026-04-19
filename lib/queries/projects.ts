@@ -1,22 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { getDb } from "../db";
+import type { LibraryKey, Paradigm } from "../drivers/types";
 
-export type Paradigm =
-  | "react"
-  | "html"
-  | "generator"
-  | "browser-ts"
-  | "json-node"
-  | "canvas-node";
-
-export type LibraryKey =
-  | "remotion"
-  | "hyperframes"
-  | "motion-canvas"
-  | "revideo"
-  | "diffusion-studio"
-  | "editly"
-  | "ffcreator";
+export type { LibraryKey, Paradigm };
 
 export interface ProjectRow {
   id: string;
