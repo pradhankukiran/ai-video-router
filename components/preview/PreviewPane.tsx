@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 
 type PreviewState =
   | { status: "idle" }
@@ -76,27 +77,19 @@ export function PreviewPane({ projectId }: { projectId: string }) {
                 href={state.url}
                 target="_blank"
                 rel="noreferrer"
-                className="border border-line bg-surface px-2 py-1 text-ink hover:bg-surface-subtle"
+                className="border border-line bg-surface px-3 py-1 text-xs text-ink hover:bg-surface-subtle"
               >
                 Open
               </a>
-              <button
-                type="button"
-                onClick={() => void stop()}
-                className="border border-line bg-surface px-2 py-1 text-ink hover:bg-surface-subtle"
-              >
-                Stop
-              </button>
+              <Button onClick={() => void stop()}>Stop</Button>
             </>
           ) : (
-            <button
-              type="button"
+            <Button
               onClick={() => void start()}
               disabled={state.status === "loading"}
-              className="border border-line bg-surface px-2 py-1 text-ink hover:bg-surface-subtle disabled:opacity-50"
             >
               {state.status === "loading" ? "Starting…" : "Start preview"}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -110,13 +103,7 @@ export function PreviewPane({ projectId }: { projectId: string }) {
         ) : state.status === "error" ? (
           <div className="space-y-3 p-4">
             <Alert variant="danger">{state.message}</Alert>
-            <button
-              type="button"
-              onClick={() => void refresh()}
-              className="border border-line bg-surface px-3 py-1 text-xs text-ink hover:bg-surface-subtle"
-            >
-              Retry
-            </button>
+            <Button onClick={() => void refresh()}>Retry</Button>
           </div>
         ) : (
           <p className="flex h-full items-center justify-center text-sm text-ink-faint">

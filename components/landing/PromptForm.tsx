@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 
 /**
  * Build a typed href for the project workspace route.
@@ -117,13 +118,13 @@ export function PromptForm() {
           Cerebras/Groq Llama 3.3 routes to the best library.
         </p>
         {!classification && (
-          <button
+          <Button
             type="submit"
+            variant="primary"
             disabled={phase !== "idle" || !prompt.trim()}
-            className="border border-accent bg-accent px-4 py-1 text-accent-ink disabled:cursor-not-allowed disabled:opacity-50"
           >
             {phase === "classifying" ? "Routing…" : "Route"}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -188,22 +189,12 @@ function ClassificationPreview({
         {classification.rationale}
       </p>
       <div className="mt-3 flex items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={submitting}
-          className="border border-line bg-surface px-3 py-1 text-xs text-ink hover:bg-surface-subtle disabled:opacity-50"
-        >
+        <Button onClick={onCancel} disabled={submitting}>
           Re-route
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={submitting}
-          className="border border-accent bg-accent px-3 py-1 text-xs text-accent-ink disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        </Button>
+        <Button variant="primary" onClick={onConfirm} disabled={submitting}>
           {submitting ? "Scaffolding…" : "Scaffold project"}
-        </button>
+        </Button>
       </div>
     </div>
   );

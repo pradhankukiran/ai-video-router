@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 
 const CONFIRM_WINDOW_MS = 5000;
 
@@ -66,15 +67,15 @@ export function ProjectActions({ projectId }: { projectId: string }) {
 
   return (
     <div className="border-t border-line px-3 py-3 text-xs">
-      <button
-        type="button"
+      <Button
+        variant="danger"
         onClick={onClick}
         disabled={deleting}
         aria-live="polite"
-        className="w-full border border-danger/40 bg-surface px-2 py-1 text-danger hover:bg-[color:var(--color-danger)]/5 disabled:opacity-50"
+        className="w-full"
       >
         {label}
-      </button>
+      </Button>
       {armed && !deleting && (
         <p className="mt-1 text-ink-faint">
           Scaffolded files on disk stay under ~/.ai-video-router/projects/.

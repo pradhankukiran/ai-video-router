@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { parseSseStream } from "@/lib/sse";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 
 interface RenderRow {
   id: string;
@@ -141,21 +142,11 @@ export function RenderPanel({ projectId }: { projectId: string }) {
           render
         </p>
         {running ? (
-          <button
-            type="button"
-            onClick={cancel}
-            className="border border-line bg-surface px-3 py-1 text-xs text-ink hover:bg-surface-subtle"
-          >
-            Cancel
-          </button>
+          <Button onClick={cancel}>Cancel</Button>
         ) : (
-          <button
-            type="button"
-            onClick={() => void start()}
-            className="border border-accent bg-accent px-3 py-1 text-xs text-accent-ink"
-          >
+          <Button variant="primary" onClick={() => void start()}>
             Render MP4
-          </button>
+          </Button>
         )}
       </div>
 

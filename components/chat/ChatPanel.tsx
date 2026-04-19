@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { parseSseStream } from "@/lib/sse";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 
 type UserPrompt = { kind: "user-prompt"; id: string; text: string };
 type StreamEnd = { kind: "stream-end"; id: string };
@@ -141,21 +142,11 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         <div className="mt-2 flex items-center justify-between text-xs text-ink-muted">
           <span>⌘/Ctrl + Enter to send</span>
           {streaming ? (
-            <button
-              type="button"
-              onClick={cancel}
-              className="border border-line bg-surface px-3 py-1 text-xs text-ink hover:bg-surface-subtle"
-            >
-              Cancel
-            </button>
+            <Button onClick={cancel}>Cancel</Button>
           ) : (
-            <button
-              type="submit"
-              disabled={!input.trim()}
-              className="border border-line bg-surface px-3 py-1 text-xs text-ink hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50"
-            >
+            <Button type="submit" disabled={!input.trim()}>
               Send
-            </button>
+            </Button>
           )}
         </div>
       </form>
