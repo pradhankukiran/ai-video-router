@@ -50,6 +50,7 @@ export function PreviewPane({ projectId }: { projectId: string }) {
   }, [projectId]);
 
   const stop = useCallback(async () => {
+    setState({ status: "loading" });
     await fetch(`/api/preview/${projectId}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json", "x-avr": "1" },
