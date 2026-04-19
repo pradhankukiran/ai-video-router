@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import fs from "node:fs/promises";
+import fs from "node:fs";
+import fsp from "node:fs/promises";
 import path from "node:path";
 import { getDriver } from "../drivers";
 import type { LibraryKey, Paradigm } from "../drivers/types";
@@ -16,6 +17,18 @@ export interface ScaffoldInput {
 export interface ScaffoldResult {
   project: ProjectRow;
 }
+
+// Names we never want to carry over from templates into a fresh project.
+const SKIP_NAMES = new Set([
+  "node_modules",
+  ".next",
+  ".git",
+  ".turbo",
+  "dist",
+  ".DS_Store",
+  ".env",
+  ".env.local",
+]);
 
 /**
  * Stamp a new project: pick id, copy the library template into
@@ -41,16 +54,29 @@ export async function scaffold(input: ScaffoldInput): Promise<ScaffoldResult> {
   return { project };
 }
 
+/**
+ * Copy a template tree into a fresh project dir.
+ *
+ * Uses fs.cp (Node 16.7+, stable in 20+) with dereference: false, plus an
+ * explicit symlink refusal in the filter. We'd rather fail loud than chase
+ * a symlink out of the template into the host filesystem.
+ */
 async function copyDir(src: string, dest: string): Promise<void> {
-  await fs.mkdir(dest, { recursive: true });
-  const entries = await fs.readdir(src, { withFileTypes: true });
-  await Promise.all(
-    entries.map(async (entry) => {
-      if (entry.name === "node_modules" || entry.name === ".next") return;
-      const srcPath = path.join(src, entry.name);
-      const destPath = path.join(dest, entry.name);
-      if (entry.isDirectory()) await copyDir(srcPath, destPath);
-      else if (entry.isFile()) await fs.copyFile(srcPath, destPath);
-    }),
-  );
+  await fsp.cp(src, dest, {
+    recursive: true,
+    dereference: false,
+    errorOnExist: false,
+    force: true,
+    filter(srcPath: string) {
+      const name = path.basename(srcPath);
+      if (SKIP_NAMES.has(name)) return false;
+      try {
+        if (fs.lstatSync(srcPath).isSymbolicLink()) return false;
+      } catch {
+        // If we can't stat it, don't copy it.
+        return false;
+      }
+      return true;
+    },
+  });
 }
