@@ -4,7 +4,18 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { projectHref } from "@/components/routes";
 import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Label } from "@/components/ui/Label";
+import { Panel } from "@/components/ui/Panel";
+import { Spinner } from "@/components/ui/Spinner";
+import { StatusDot } from "@/components/ui/StatusDot";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/Tabs";
 
 type Phase = "idle" | "classifying" | "scaffolding";
 
@@ -87,37 +98,52 @@ export function PromptForm() {
   }
 
   return (
-    <form
-      onSubmit={classify}
-      className="border border-line bg-surface p-5 text-sm"
-    >
-      <label className="block">
-        <span className="text-[10px] uppercase tracking-wider text-ink-faint">
-          describe the video
-        </span>
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          rows={5}
-          disabled={phase !== "idle"}
-          className="mt-1 w-full resize-y border border-line bg-surface px-2 py-1 text-ink focus:border-accent disabled:opacity-60"
-          placeholder="30s product explainer, corporate tone, kinetic title, neutral palette…"
-        />
-      </label>
-      <div className="mt-4 flex items-center justify-between gap-4">
-        <p className="text-xs text-ink-muted">
-          Groq Llama 4 Scout routes to the best library.
-        </p>
+    <Panel>
+      <form onSubmit={classify}>
+        <Panel.Header>
+          <Label>describe the video</Label>
+          <div className="flex items-center gap-2 text-xs text-text-tertiary">
+            {phase === "classifying" && (
+              <>
+                <StatusDot tone="accent" pulse />
+                <Spinner size={10} label="Routing" />
+                <span>routing…</span>
+              </>
+            )}
+            {phase === "scaffolding" && (
+              <>
+                <StatusDot tone="accent" pulse />
+                <Spinner size={10} label="Scaffolding" />
+                <span>scaffolding…</span>
+              </>
+            )}
+            {phase === "idle" && !classification && (
+              <span>Groq Llama 4 Scout</span>
+            )}
+          </div>
+        </Panel.Header>
+        <Panel.Body>
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            rows={5}
+            disabled={phase !== "idle"}
+            className="w-full resize-y border border-border bg-bg px-2 py-1.5 text-sm text-text-primary focus:border-action disabled:opacity-60"
+            placeholder="30s product explainer, corporate tone, kinetic title, neutral palette…"
+          />
+        </Panel.Body>
         {!classification && (
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={phase !== "idle" || !prompt.trim()}
-          >
-            {phase === "classifying" ? "Routing…" : "Route"}
-          </Button>
+          <Panel.Footer>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={phase !== "idle" || !prompt.trim()}
+            >
+              {phase === "classifying" ? "Routing…" : "Route"}
+            </Button>
+          </Panel.Footer>
         )}
-      </div>
+      </form>
 
       {classification && (
         <ClassificationPreview
@@ -129,13 +155,13 @@ export function PromptForm() {
       )}
 
       {error && (
-        <div className="mt-3">
+        <div className="border-t border-border p-3">
           <Alert variant="danger" onDismiss={() => setError(null)}>
             {error}
           </Alert>
         </div>
       )}
-    </form>
+    </Panel>
   );
 }
 
@@ -151,35 +177,54 @@ function ClassificationPreview({
   submitting: boolean;
 }) {
   return (
-    <div className="mt-4 border border-line bg-surface-subtle p-3">
-      <p className="text-[10px] uppercase tracking-wider text-ink-faint">
-        classification
-      </p>
-      <div className="mt-2 grid grid-cols-2 gap-y-1 text-xs text-ink-muted">
-        <span className="text-ink-faint">title</span>
-        <span className="text-ink">{classification.title}</span>
-        <span className="text-ink-faint">library</span>
-        <span className="text-ink">
-          {classification.library}{" "}
-          <span className="text-ink-faint">· {classification.paradigm}</span>
+    <div className="border-t border-border bg-bg-subtle">
+      <div className="flex items-center justify-between border-b border-border px-3 py-2">
+        <Label>classification</Label>
+        <span className="flex items-center gap-2">
+          <Badge tone="accent">{classification.library}</Badge>
+          <span className="font-mono text-micro text-text-tertiary">
+            {(classification.confidence * 100).toFixed(0)}%
+          </span>
         </span>
-        <span className="text-ink-faint">confidence</span>
-        <span className="text-ink">
-          {(classification.confidence * 100).toFixed(0)}%
-        </span>
-        <span className="text-ink-faint">duration</span>
-        <span className="text-ink">
-          {classification.spec.durationSec}s @ {classification.spec.fps}fps
-        </span>
-        <span className="text-ink-faint">dimensions</span>
-        <span className="text-ink">{classification.spec.dimensions}</span>
-        <span className="text-ink-faint">tone</span>
-        <span className="text-ink">{classification.spec.tone}</span>
       </div>
-      <p className="mt-2 border-t border-line pt-2 text-xs italic text-ink-muted">
-        {classification.rationale}
-      </p>
-      <div className="mt-3 flex items-center justify-end gap-2">
+      <Tabs defaultValue="summary">
+        <TabsList className="px-2">
+          <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="rationale">Rationale</TabsTrigger>
+          <TabsTrigger value="spec">Spec</TabsTrigger>
+        </TabsList>
+        <TabsContent value="summary">
+          <dl className="grid grid-cols-[90px_1fr] gap-y-1 px-3 py-3 text-xs">
+            <Dt>title</Dt>
+            <Dd>{classification.title}</Dd>
+            <Dt>paradigm</Dt>
+            <Dd className="font-mono">{classification.paradigm}</Dd>
+            <Dt>duration</Dt>
+            <Dd>
+              {classification.spec.durationSec}s @ {classification.spec.fps}fps
+            </Dd>
+          </dl>
+        </TabsContent>
+        <TabsContent value="rationale">
+          <p className="px-3 py-3 text-xs text-text-secondary">
+            {classification.rationale ||
+              "No rationale provided by the router."}
+          </p>
+        </TabsContent>
+        <TabsContent value="spec">
+          <dl className="grid grid-cols-[90px_1fr] gap-y-1 px-3 py-3 text-xs">
+            <Dt>dimensions</Dt>
+            <Dd className="font-mono">{classification.spec.dimensions}</Dd>
+            <Dt>tone</Dt>
+            <Dd>{classification.spec.tone}</Dd>
+            <Dt>has avatar</Dt>
+            <Dd>{classification.spec.hasAvatar ? "yes" : "no"}</Dd>
+            <Dt>data viz</Dt>
+            <Dd>{classification.spec.hasDataViz ? "yes" : "no"}</Dd>
+          </dl>
+        </TabsContent>
+      </Tabs>
+      <div className="flex items-center justify-end gap-2 border-t border-border px-3 py-2">
         <Button onClick={onCancel} disabled={submitting}>
           Re-route
         </Button>
@@ -189,4 +234,18 @@ function ClassificationPreview({
       </div>
     </div>
   );
+}
+
+function Dt({ children }: { children: React.ReactNode }) {
+  return <dt className="text-text-tertiary">{children}</dt>;
+}
+
+function Dd({
+  className,
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return <dd className={`text-text-primary ${className ?? ""}`}>{children}</dd>;
 }
