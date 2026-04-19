@@ -99,7 +99,7 @@ export function PromptForm() {
           onChange={(e) => setPrompt(e.target.value)}
           rows={5}
           disabled={phase !== "idle"}
-          className="mt-1 w-full resize-y border border-line bg-surface px-2 py-1 text-ink focus:border-accent focus:outline-none disabled:opacity-60"
+          className="mt-1 w-full resize-y border border-line bg-surface px-2 py-1 text-ink focus:border-accent disabled:opacity-60"
           placeholder="30s product explainer, corporate tone, kinetic title, neutral palette…"
         />
       </label>
