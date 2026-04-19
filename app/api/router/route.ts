@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { jsonError, parseJsonBody } from "@/lib/http";
 import { classifyPrompt } from "@/lib/router/classify";
 
 export const runtime = "nodejs";
@@ -10,18 +11,14 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const parsed = bodySchema.safeParse(await req.json());
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid body", issues: parsed.error.issues },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonBody(req, bodySchema);
+  if (parsed instanceof Response) return parsed;
+
   try {
-    const classification = await classifyPrompt(parsed.data.prompt);
+    const classification = await classifyPrompt(parsed.prompt);
     return NextResponse.json({ classification });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return jsonError(500, message);
   }
 }
