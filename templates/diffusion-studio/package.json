@@ -1,0 +1,18 @@
+{
+  "name": "video-project",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Diffusion Studio video project scaffolded by ai-video-router",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@diffusionstudio/core": "latest"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vite": "^5.4.0"
+  }
+}
