@@ -1,5 +1,6 @@
 import { diffusionStudioDriver } from "./diffusion-studio";
 import { editlyDriver } from "./editly";
+import { ffcreatorDriver } from "./ffcreator";
 import { hyperframesDriver } from "./hyperframes";
 import { motionCanvasDriver } from "./motion-canvas";
 import { remotionDriver } from "./remotion";
@@ -13,6 +14,7 @@ export const drivers: Partial<Record<LibraryKey, VideoDriver>> = {
   revideo: revideoDriver,
   "diffusion-studio": diffusionStudioDriver,
   editly: editlyDriver,
+  ffcreator: ffcreatorDriver,
 };
 
 export function getDriver(key: LibraryKey): VideoDriver {
