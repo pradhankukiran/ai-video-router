@@ -8,8 +8,14 @@ import { Alert } from "@/components/ui/Alert";
 type UserPrompt = { kind: "user-prompt"; id: string; text: string };
 type StreamEnd = { kind: "stream-end"; id: string };
 type StreamError = { kind: "stream-error"; id: string; error: string };
+type StreamCancelled = { kind: "stream-cancelled"; id: string };
 type SdkEvent = { kind: "sdk"; id: string; message: SDKMessage };
-type ChatEntry = UserPrompt | StreamEnd | StreamError | SdkEvent;
+type ChatEntry =
+  | UserPrompt
+  | StreamEnd
+  | StreamError
+  | StreamCancelled
+  | SdkEvent;
 
 type WireEvent =
   | SDKMessage
@@ -24,10 +30,15 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [entries]);
+
+  const cancel = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
 
   const send = useCallback(async () => {
     const text = input.trim();
@@ -35,11 +46,14 @@ export function ChatPanel({ projectId }: { projectId: string }) {
     setInput("");
     setEntries((es) => [...es, { kind: "user-prompt", id: newId(), text }]);
     setStreaming(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       const res = await fetch(`/api/session/${projectId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-avr": "1" },
         body: JSON.stringify({ message: text }),
+        signal: controller.signal,
       });
       if (!res.ok || !res.body) {
         throw new Error(`session request failed: ${res.status}`);
@@ -60,12 +74,20 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         }
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setEntries((es) => [
-        ...es,
-        { kind: "stream-error", id: newId(), error: message },
-      ]);
+      if (controller.signal.aborted) {
+        setEntries((es) => [
+          ...es,
+          { kind: "stream-cancelled", id: newId() },
+        ]);
+      } else {
+        const message = err instanceof Error ? err.message : String(err);
+        setEntries((es) => [
+          ...es,
+          { kind: "stream-error", id: newId(), error: message },
+        ]);
+      }
     } finally {
+      abortRef.current = null;
       setStreaming(false);
     }
   }, [input, streaming, projectId]);
@@ -107,13 +129,23 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         />
         <div className="mt-2 flex items-center justify-between text-xs text-ink-muted">
           <span>⌘/Ctrl + Enter to send</span>
-          <button
-            type="submit"
-            disabled={streaming || !input.trim()}
-            className="border border-line bg-surface px-3 py-1 text-sm text-ink hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {streaming ? "Streaming…" : "Send"}
-          </button>
+          {streaming ? (
+            <button
+              type="button"
+              onClick={cancel}
+              className="border border-line bg-surface px-3 py-1 text-xs text-ink hover:bg-surface-subtle"
+            >
+              Cancel
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!input.trim()}
+              className="border border-line bg-surface px-3 py-1 text-xs text-ink hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Send
+            </button>
+          )}
         </div>
       </form>
     </div>
@@ -140,6 +172,9 @@ function EntryRow({ entry }: { entry: ChatEntry }) {
   }
   if (entry.kind === "stream-error") {
     return <Alert variant="danger">{entry.error}</Alert>;
+  }
+  if (entry.kind === "stream-cancelled") {
+    return <Alert variant="info">turn cancelled</Alert>;
   }
   return <SdkRow message={entry.message} />;
 }
