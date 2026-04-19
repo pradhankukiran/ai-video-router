@@ -277,17 +277,22 @@ function EntryRow({
 }) {
   if (entry.kind === "user-prompt") {
     return (
-      <div className="border border-line bg-surface-subtle px-3 py-2 text-sm">
-        <p className="mb-1 text-[10px] uppercase tracking-wider text-ink-faint">
+      <div className="border-l-2 border-[color:var(--color-accent)] bg-bg-subtle px-3 py-2 text-sm">
+        <p className="mb-1 font-mono text-micro uppercase tracking-wider text-text-tertiary">
+          <span className="mr-2 text-text-tertiary/60 normal-case tracking-normal">
+            &gt;
+          </span>
           you
         </p>
-        <p className="whitespace-pre-wrap text-ink">{entry.text}</p>
+        <p className="whitespace-pre-wrap font-sans text-base text-text-primary">
+          {entry.text}
+        </p>
       </div>
     );
   }
   if (entry.kind === "stream-end") {
     return (
-      <p className="py-1 text-center text-[10px] uppercase tracking-wider text-ink-faint">
+      <p className="py-1 text-center font-mono text-micro uppercase tracking-wider text-text-tertiary">
         — turn complete —
       </p>
     );
@@ -340,15 +345,21 @@ function AssistantRow({
 }) {
   const blocks = message.message.content;
   return (
-    <div className="border border-line px-3 py-2 text-sm">
-      <p className="mb-1 text-[10px] uppercase tracking-wider text-ink-faint">
+    <div className="border-l-2 border-border px-3 py-2 text-sm">
+      <p className="mb-1 font-mono text-micro uppercase tracking-wider text-text-tertiary">
+        <span className="mr-2 text-text-tertiary/60 normal-case tracking-normal">
+          &lt;
+        </span>
         claude code
       </p>
       <div className="space-y-2">
         {blocks.map((block, i) => {
           if (block.type === "text") {
             return (
-              <p key={i} className="whitespace-pre-wrap text-ink">
+              <p
+                key={i}
+                className="whitespace-pre-wrap font-sans text-base text-text-primary"
+              >
                 {block.text}
               </p>
             );
