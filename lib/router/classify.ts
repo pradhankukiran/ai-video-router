@@ -203,6 +203,75 @@ export type RouterOutput = z.infer<typeof routerOutputSchema>;
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 const DEFAULT_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
 
+/**
+ * JSON Schema mirror of `routerOutputSchema`. Used with Groq's
+ * structured-output mode (`response_format.type = "json_schema"`, `strict:
+ * true`) so the sampler is constrained to emit the exact shape — this
+ * prevents Llama 4 Scout from dropping optional-looking fields like
+ * `rationale`. We keep the zod validation downstream as a second guard
+ * in case the model provider ignores strict mode.
+ */
+const ROUTER_JSON_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "title",
+    "library",
+    "paradigm",
+    "confidence",
+    "rationale",
+    "spec",
+  ],
+  properties: {
+    title: { type: "string", minLength: 1, maxLength: 120 },
+    library: {
+      type: "string",
+      enum: [
+        "remotion",
+        "hyperframes",
+        "motion-canvas",
+        "revideo",
+        "diffusion-studio",
+        "editly",
+        "ffcreator",
+      ],
+    },
+    paradigm: {
+      type: "string",
+      enum: [
+        "react",
+        "html",
+        "generator",
+        "browser-ts",
+        "json-node",
+        "canvas-node",
+      ],
+    },
+    confidence: { type: "number", minimum: 0, maximum: 1 },
+    rationale: { type: "string", maxLength: 500 },
+    spec: {
+      type: "object",
+      additionalProperties: false,
+      required: [
+        "durationSec",
+        "fps",
+        "dimensions",
+        "tone",
+        "hasAvatar",
+        "hasDataViz",
+      ],
+      properties: {
+        durationSec: { type: "number", minimum: 1, maximum: 3600 },
+        fps: { type: "number", minimum: 1, maximum: 120 },
+        dimensions: { type: "string", minLength: 3, maxLength: 20 },
+        tone: { type: "string", minLength: 1, maxLength: 40 },
+        hasAvatar: { type: "boolean" },
+        hasDataViz: { type: "boolean" },
+      },
+    },
+  },
+} as const;
+
 function resolveGroqConfig(): { apiKey: string; model: string } {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
@@ -224,7 +293,14 @@ export async function classifyPrompt(userPrompt: string): Promise<RouterOutput> 
     model: cfg.model,
     messages: buildRouterMessages(userPrompt),
     temperature: 0.1,
-    response_format: { type: "json_object" },
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "RouterOutput",
+        schema: ROUTER_JSON_SCHEMA,
+        strict: true,
+      },
+    },
   });
 
   const raw = completion.choices[0]?.message.content;
