@@ -1,3 +1,4 @@
+import { diffusionStudioDriver } from "./diffusion-studio";
 import { hyperframesDriver } from "./hyperframes";
 import { motionCanvasDriver } from "./motion-canvas";
 import { remotionDriver } from "./remotion";
@@ -9,6 +10,7 @@ export const drivers: Partial<Record<LibraryKey, VideoDriver>> = {
   hyperframes: hyperframesDriver,
   "motion-canvas": motionCanvasDriver,
   revideo: revideoDriver,
+  "diffusion-studio": diffusionStudioDriver,
 };
 
 export function getDriver(key: LibraryKey): VideoDriver {

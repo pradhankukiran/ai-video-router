@@ -1,0 +1,60 @@
+import { spawn } from "node:child_process";
+import path from "node:path";
+import {
+  findFreePort,
+  makeEventStream,
+  runToCompletion,
+  waitForReady,
+} from "./_process";
+import type { PreviewHandle, RenderEvent, VideoDriver } from "./types";
+
+const TEMPLATE_DIR = path.join(
+  process.cwd(),
+  "templates",
+  "diffusion-studio",
+);
+
+export const diffusionStudioDriver: VideoDriver = {
+  key: "diffusion-studio",
+  paradigm: "browser-ts",
+  label: "Diffusion Studio",
+  templateDir: TEMPLATE_DIR,
+
+  async install(projectPath) {
+    await runToCompletion("pnpm", ["install"], { cwd: projectPath });
+  },
+
+  async startPreview(projectPath): Promise<PreviewHandle> {
+    const port = await findFreePort();
+    const proc = spawn(
+      "pnpm",
+      ["exec", "vite", "--port", String(port), "--host", "127.0.0.1"],
+      { cwd: projectPath, stdio: ["ignore", "pipe", "pipe"] },
+    );
+    try {
+      await waitForReady(proc, (text) => /localhost:|ready in/i.test(text));
+    } catch (err) {
+      proc.kill("SIGTERM");
+      throw err;
+    }
+    return {
+      url: `http://127.0.0.1:${port}`,
+      kill: async () => {
+        proc.kill("SIGTERM");
+      },
+    };
+  },
+
+  render(_projectPath, outPath): AsyncIterable<RenderEvent> {
+    const { push, end, stream } = makeEventStream<RenderEvent>();
+    push({
+      type: "error",
+      message:
+        "Diffusion Studio renders via its browser SDK rather than a Node CLI. Ask Claude Code to wire a programmatic export in the project that writes to " +
+        outPath +
+        ".",
+    });
+    end();
+    return stream;
+  },
+};
