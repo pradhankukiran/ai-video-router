@@ -19,6 +19,7 @@ export function ProjectActions({ projectId }: { projectId: string }) {
     try {
       const res = await fetch(`/api/projects/${projectId}`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json", "x-avr": "1" },
       });
       if (!res.ok) {
         const data: { error?: string } = await res.json().catch(() => ({}));

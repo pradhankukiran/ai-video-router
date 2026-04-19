@@ -42,7 +42,7 @@ export function PromptForm() {
     try {
       const res = await fetch("/api/router", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-avr": "1" },
         body: JSON.stringify({ prompt: text }),
       });
       const data: { classification?: Classification; error?: string } =
@@ -65,7 +65,7 @@ export function PromptForm() {
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-avr": "1" },
         body: JSON.stringify({
           title: classification.title,
           prompt: prompt.trim(),

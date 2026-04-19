@@ -38,7 +38,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
     try {
       const res = await fetch(`/api/session/${projectId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-avr": "1" },
         body: JSON.stringify({ message: text }),
       });
       if (!res.ok || !res.body) {

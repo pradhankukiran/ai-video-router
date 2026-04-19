@@ -50,7 +50,10 @@ export function RenderPanel({ projectId }: { projectId: string }) {
     setRunning(true);
     setProgress({ frame: 0, totalFrames: 0, error: null, doneUrl: null });
     try {
-      const res = await fetch(`/api/render/${projectId}`, { method: "POST" });
+      const res = await fetch(`/api/render/${projectId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-avr": "1" },
+      });
       if (!res.ok || !res.body) {
         setProgress({
           frame: 0,

@@ -24,7 +24,10 @@ export function PreviewPane({ projectId }: { projectId: string }) {
 
   const start = useCallback(async () => {
     setState({ status: "loading" });
-    const res = await fetch(`/api/preview/${projectId}`, { method: "POST" });
+    const res = await fetch(`/api/preview/${projectId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-avr": "1" },
+    });
     const data: { status: string; url?: string; error?: string } =
       await res.json();
     if (!res.ok || !data.url) {
@@ -38,7 +41,10 @@ export function PreviewPane({ projectId }: { projectId: string }) {
   }, [projectId]);
 
   const stop = useCallback(async () => {
-    await fetch(`/api/preview/${projectId}`, { method: "DELETE" });
+    await fetch(`/api/preview/${projectId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", "x-avr": "1" },
+    });
     await refresh();
   }, [projectId, refresh]);
 
