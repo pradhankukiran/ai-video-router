@@ -1,0 +1,37 @@
+{
+  width: 1920,
+  height: 1080,
+  fps: 30,
+  outPath: 'out/video.mp4',
+  defaults: {
+    transition: { duration: 0.6, name: 'fade' },
+  },
+  clips: [
+    {
+      duration: 3,
+      layers: [
+        { type: 'fill-color', color: '#ffffff' },
+        {
+          type: 'title',
+          text: 'Your title here',
+          position: 'center',
+          textColor: '#0f172a',
+          fontSize: 96,
+        },
+      ],
+    },
+    {
+      duration: 3,
+      layers: [
+        { type: 'fill-color', color: '#ffffff' },
+        {
+          type: 'title',
+          text: 'Describe your change to Claude Code',
+          position: 'center',
+          textColor: '#475569',
+          fontSize: 48,
+        },
+      ],
+    },
+  ],
+}

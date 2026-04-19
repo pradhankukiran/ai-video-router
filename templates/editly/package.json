@@ -1,0 +1,15 @@
+{
+  "name": "video-project",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Editly video project scaffolded by ai-video-router",
+  "scripts": {
+    "build": "editly video.json5 --out out/video.mp4"
+  },
+  "devDependencies": {
+    "editly": "latest"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
