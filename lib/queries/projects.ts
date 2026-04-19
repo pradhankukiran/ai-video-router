@@ -17,6 +17,7 @@ export interface ProjectRow {
 }
 
 export interface CreateProjectInput {
+  id?: string;
   title: string;
   library: LibraryKey;
   paradigm: Paradigm;
@@ -26,7 +27,7 @@ export interface CreateProjectInput {
 
 export function createProject(input: CreateProjectInput): ProjectRow {
   const now = Date.now();
-  const id = randomUUID();
+  const id = input.id ?? randomUUID();
   const row: ProjectRow = {
     id,
     title: input.title,
