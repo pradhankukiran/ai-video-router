@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { parseSseStream } from "@/lib/sse";
 import { Alert } from "@/components/ui/Alert";
@@ -31,7 +37,16 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  useLayoutEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const MAX_HEIGHT_PX = 240;
+    el.style.height = `${Math.min(el.scrollHeight, MAX_HEIGHT_PX)}px`;
+  }, [input]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -126,6 +141,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         }}
       >
         <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
@@ -137,7 +153,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
           placeholder="Describe the change…"
           rows={3}
           disabled={streaming}
-          className="w-full resize-none border border-line bg-surface px-2 py-1 text-sm focus:border-accent"
+          className="w-full resize-none overflow-y-auto border border-line bg-surface px-2 py-1 text-sm focus:border-accent"
         />
         <div className="mt-2 flex items-center justify-between text-xs text-ink-muted">
           <span>⌘/Ctrl + Enter to send</span>
