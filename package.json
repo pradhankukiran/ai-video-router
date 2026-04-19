@@ -12,7 +12,8 @@
     "build": "next build",
     "start": "next start --port 3000",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "doctor": "node --import=tsx scripts/doctor.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.114",
@@ -31,6 +32,7 @@
     "@types/react-dom": "^19.0.0",
     "postcss": "^8.5.10",
     "tailwindcss": "^4.2.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.0"
   },
   "pnpm": {
