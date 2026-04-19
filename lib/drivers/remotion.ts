@@ -37,8 +37,12 @@ export const remotionDriver: VideoDriver = {
     );
 
     try {
+      // Remotion Studio prints a concrete "Server ready" / "Studio is
+      // running on" line once it's listening. The previous pattern matched
+      // any line containing "localhost:", which false-positives on
+      // deprecation warnings and dependency URLs.
       await waitForReady(proc, (text) =>
-        /server ready|open your browser|localhost:/i.test(text),
+        /Server ready|Studio is running on/i.test(text),
       );
     } catch (err) {
       await killTree(proc);
