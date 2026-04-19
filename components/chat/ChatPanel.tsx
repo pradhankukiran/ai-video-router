@@ -130,7 +130,15 @@ export function ChatPanel({ projectId }: { projectId: string }) {
             </p>
           </div>
         ) : (
-          entries.map((e) => <EntryRow key={e.id} entry={e} />)
+          entries.map((e) => (
+            <EntryRow
+              key={e.id}
+              entry={e}
+              onDismiss={() =>
+                setEntries((es) => es.filter((x) => x.id !== e.id))
+              }
+            />
+          ))
         )}
       </div>
       <form
@@ -170,7 +178,13 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   );
 }
 
-function EntryRow({ entry }: { entry: ChatEntry }) {
+function EntryRow({
+  entry,
+  onDismiss,
+}: {
+  entry: ChatEntry;
+  onDismiss: () => void;
+}) {
   if (entry.kind === "user-prompt") {
     return (
       <div className="border border-line bg-surface-subtle px-3 py-2 text-sm">
@@ -189,10 +203,18 @@ function EntryRow({ entry }: { entry: ChatEntry }) {
     );
   }
   if (entry.kind === "stream-error") {
-    return <Alert variant="danger">{entry.error}</Alert>;
+    return (
+      <Alert variant="danger" onDismiss={onDismiss}>
+        {entry.error}
+      </Alert>
+    );
   }
   if (entry.kind === "stream-cancelled") {
-    return <Alert variant="info">turn cancelled</Alert>;
+    return (
+      <Alert variant="info" onDismiss={onDismiss}>
+        turn cancelled
+      </Alert>
+    );
   }
   return <SdkRow message={entry.message} />;
 }
