@@ -117,6 +117,8 @@ export function ChatPanel({ projectId }: { projectId: string }) {
     <div className="flex h-full flex-col">
       <div
         ref={scrollRef}
+        aria-live="polite"
+        aria-relevant="additions"
         className="flex-1 space-y-2 overflow-y-auto px-4 py-3"
       >
         {entries.length === 0 ? (

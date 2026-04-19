@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseJsonBody } from "@/lib/http";
 import { runSession } from "@/lib/sessions/manager";
 
 export const runtime = "nodejs";
@@ -14,13 +15,8 @@ interface Ctx {
 
 export async function POST(req: Request, { params }: Ctx) {
   const { id } = await params;
-  const parsed = bodySchema.safeParse(await req.json());
-  if (!parsed.success) {
-    return new Response(
-      JSON.stringify({ error: "Invalid body", issues: parsed.error.issues }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
-    );
-  }
+  const body = await parseJsonBody(req, bodySchema);
+  if (body instanceof Response) return body;
 
   const encoder = new TextEncoder();
   const write = (chunk: unknown) =>
@@ -32,7 +28,7 @@ export async function POST(req: Request, { params }: Ctx) {
       try {
         for await (const msg of runSession({
           projectId: id,
-          message: parsed.data.message,
+          message: body.message,
           signal: req.signal,
         })) {
           if (aborted()) break;
