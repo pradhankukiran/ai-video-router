@@ -2,7 +2,7 @@ import type { ProjectRow } from "@/lib/queries/projects";
 
 export function ProjectMeta({ project }: { project: ProjectRow }) {
   return (
-    <div className="flex h-full flex-col overflow-y-auto border-line text-sm">
+    <div className="flex flex-col border-line text-sm">
       <section className="border-b border-line px-3 py-3">
         <p className="text-[10px] uppercase tracking-wider text-ink-faint">
           library
