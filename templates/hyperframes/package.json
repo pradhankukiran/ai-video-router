@@ -1,0 +1,16 @@
+{
+  "name": "video-project",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hyperframes video project scaffolded by ai-video-router",
+  "scripts": {
+    "dev": "hyperframes preview",
+    "build": "hyperframes render"
+  },
+  "devDependencies": {
+    "hyperframes": "latest"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Hyperframes composition</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+        color: #0f172a;
+        font-family:
+          ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Helvetica, Arial, sans-serif;
+      }
+      .stage {
+        width: 1920px;
+        height: 1080px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 24px;
+        text-align: center;
+        padding: 80px;
+        box-sizing: border-box;
+      }
+      h1 {
+        margin: 0;
+        font-size: 120px;
+        font-weight: 600;
+      }
+      p {
+        margin: 0;
+        font-size: 40px;
+        color: #475569;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      Hyperframes renders the first element with `data-hf-scene`. Timing
+      attributes: data-hf-from (seconds), data-hf-to (seconds), data-hf-ease.
+      See https://github.com/heygen-com/hyperframes for the full attribute
+      reference.
+    -->
+    <main
+      class="stage"
+      data-hf-scene
+      data-hf-duration="5"
+      data-hf-fps="30"
+      data-hf-size="1920x1080"
+    >
+      <h1 data-hf-from="0" data-hf-to="0.8" data-hf-ease="ease-out">
+        Your title here
+      </h1>
+      <p data-hf-from="0.4" data-hf-to="1.2" data-hf-ease="ease-out">
+        Describe your change to Claude Code.
+      </p>
+    </main>
+  </body>
+</html>
