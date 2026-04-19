@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { PreviewPane } from "@/components/preview/PreviewPane";
 import { ProjectMeta } from "@/components/project/ProjectMeta";
+import { RenderPanel } from "@/components/render/RenderPanel";
 import { getProject } from "@/lib/queries/projects";
 
 interface Props {
@@ -33,14 +34,15 @@ export default async function ProjectWorkspace({ params }: Props) {
         <PreviewPane projectId={project.id} />
       </section>
 
-      <aside className="flex min-h-0 flex-col">
-        <header className="border-b border-line px-3 py-3">
+      <aside className="flex min-h-0 flex-col divide-y divide-line">
+        <header className="px-3 py-3">
           <p className="text-[10px] uppercase tracking-wider text-ink-faint">
             project
           </p>
         </header>
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <ProjectMeta project={project} />
+          <RenderPanel projectId={project.id} />
         </div>
       </aside>
     </div>
