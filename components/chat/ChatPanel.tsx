@@ -11,6 +11,8 @@ import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { parseSseStream } from "@/lib/sse";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { ToolUseDispatch } from "./tool_use/dispatch";
+import type { ToolUseBlock } from "./tool_use/types";
 
 type UserPrompt = { kind: "user-prompt"; id: string; text: string };
 type StreamEnd = { kind: "stream-end"; id: string };
@@ -353,18 +355,10 @@ function AssistantRow({
           }
           if (block.type === "tool_use") {
             return (
-              <details
+              <ToolUseDispatch
                 key={i}
-                className="border border-line bg-surface-subtle px-2 py-1 text-xs"
-              >
-                <summary className="cursor-pointer text-ink-muted">
-                  <span className="text-ink">{block.name}</span>
-                  <span className="ml-2 text-ink-faint">tool_use</span>
-                </summary>
-                <pre className="mt-1 overflow-x-auto whitespace-pre-wrap text-[11px] text-ink-muted">
-                  {JSON.stringify(block.input, null, 2)}
-                </pre>
-              </details>
+                block={block as unknown as ToolUseBlock}
+              />
             );
           }
           return null;
