@@ -13,7 +13,7 @@
     "start": "next start --port 3000",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "doctor": "node --import=tsx scripts/doctor.ts"
+    "doctor": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import=tsx scripts/doctor.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.114",
