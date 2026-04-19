@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { Label } from "@/components/ui/Label";
+import { Spinner } from "@/components/ui/Spinner";
+import { StatusDot } from "@/components/ui/StatusDot";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 type PreviewState =
   | { status: "idle" }
@@ -22,9 +27,7 @@ export function PreviewPane({ projectId }: { projectId: string }) {
       const res = await fetch(`/api/preview/${projectId}`, {
         signal: controller.signal,
       });
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: { status: string; url?: string } = await res.json();
       if (data.status === "running" && data.url) {
         setState({ status: "running", url: data.url });
@@ -99,14 +102,41 @@ export function PreviewPane({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2">
-        <div className="min-w-0 text-xs text-ink-muted">
-          <span className="uppercase tracking-wider">Preview</span>
+      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <div className="flex min-w-0 items-center gap-2 text-xs">
+          <StatusDot
+            tone={
+              state.status === "running"
+                ? "success"
+                : state.status === "loading"
+                  ? "accent"
+                  : state.status === "error"
+                    ? "danger"
+                    : "idle"
+            }
+            pulse={state.status === "loading"}
+          />
+          <Label>preview</Label>
+          <Badge
+            tone={
+              state.status === "running"
+                ? "success"
+                : state.status === "error"
+                  ? "danger"
+                  : "neutral"
+            }
+          >
+            {state.status}
+          </Badge>
           {state.status === "running" && (
-            <span className="ml-2 truncate text-ink-faint">{state.url}</span>
+            <Tooltip content={state.url}>
+              <span className="ml-1 max-w-[280px] truncate font-mono text-micro text-text-tertiary">
+                {state.url}
+              </span>
+            </Tooltip>
           )}
         </div>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="ml-auto flex items-center gap-2 text-xs">
           {state.status === "running" ? (
             <>
               <ButtonLink
@@ -120,31 +150,45 @@ export function PreviewPane({ projectId }: { projectId: string }) {
             </>
           ) : (
             <Button
+              variant="primary"
               onClick={() => void start()}
               disabled={state.status === "loading"}
             >
-              {state.status === "loading" ? "Starting…" : "Start preview"}
+              {state.status === "loading" ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Spinner size={10} label="Starting" />
+                  Starting…
+                </span>
+              ) : (
+                "Start preview"
+              )}
             </Button>
           )}
         </div>
-      </div>
-      <div className="flex-1 bg-surface-subtle">
-        {state.status === "running" ? (
+      </header>
+      <div className="relative min-h-0 flex-1 bg-bg-subtle">
+        {state.status === "running" && (
           <iframe
             src={state.url}
             className="h-full w-full border-0 bg-white"
             title="Preview"
           />
-        ) : state.status === "error" ? (
+        )}
+        {state.status === "error" && (
           <div className="space-y-3 p-4">
             <Alert variant="danger">{state.message}</Alert>
             <Button onClick={() => void refresh()}>Retry</Button>
           </div>
-        ) : (
-          <p className="flex h-full items-center justify-center text-sm text-ink-faint">
-            {state.status === "loading"
-              ? "Starting preview…"
-              : "Preview is not running."}
+        )}
+        {state.status === "idle" && (
+          <p className="flex h-full items-center justify-center text-sm text-text-tertiary">
+            Preview is not running.
+          </p>
+        )}
+        {state.status === "loading" && (
+          <p className="flex h-full items-center justify-center gap-2 text-sm text-text-secondary">
+            <Spinner size={12} label="Starting preview" />
+            Starting preview…
           </p>
         )}
       </div>
