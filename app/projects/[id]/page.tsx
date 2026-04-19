@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { PreviewPane } from "@/components/preview/PreviewPane";
+import { ProjectActions } from "@/components/project/ProjectActions";
 import { ProjectMeta } from "@/components/project/ProjectMeta";
 import { RenderPanel } from "@/components/render/RenderPanel";
 import { getProject } from "@/lib/queries/projects";
@@ -43,6 +44,7 @@ export default async function ProjectWorkspace({ params }: Props) {
         <div className="min-h-0 flex-1 overflow-y-auto">
           <ProjectMeta project={project} />
           <RenderPanel projectId={project.id} />
+          <ProjectActions projectId={project.id} />
         </div>
       </aside>
     </div>
