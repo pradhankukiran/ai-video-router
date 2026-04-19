@@ -1,12 +1,6 @@
-import { spawn } from "node:child_process";
 import path from "node:path";
-import {
-  buildChildEnv,
-  killTree,
-  makeEventStream,
-  runToCompletion,
-} from "./_process";
-import type { PreviewHandle, RenderEvent, VideoDriver } from "./types";
+import { buildChildEnv, runToCompletion, spawnRender } from "./_process";
+import type { PreviewHandle, VideoDriver } from "./types";
 
 const TEMPLATE_DIR = path.join(process.cwd(), "templates", "ffcreator");
 
@@ -25,57 +19,18 @@ export const ffcreatorDriver: VideoDriver = {
     throw new Error("preview not supported");
   },
 
-  render(projectPath, outPath, opts): AsyncIterable<RenderEvent> {
-    const { push, end, stream } = makeEventStream<RenderEvent>();
-
-    if (opts?.signal?.aborted) {
-      push({ type: "error", message: "Aborted" });
-      end();
-      return stream;
-    }
-
-    const proc = spawn("pnpm", ["run", "build"], {
+  render(projectPath, outPath, opts) {
+    return spawnRender({
+      cmd: "pnpm",
+      args: ["run", "build"],
       cwd: projectPath,
-      stdio: ["ignore", "pipe", "pipe"],
-      detached: true,
+      outPath,
+      errorLabel: "ffcreator script",
       env: buildChildEnv({ AVR_OUTPUT_PATH: outPath }),
+      progressRe: /progress\s+(\d+)%/i,
+      progressFromMatch: (m) =>
+        m[1] ? { frame: Number(m[1]), totalFrames: 100 } : null,
+      signal: opts?.signal,
     });
-
-    const onData = (chunk: Buffer) => {
-      const text = chunk.toString();
-      push({ type: "log", line: text });
-      const m = /progress\s+(\d+)%/i.exec(text);
-      if (m?.[1]) {
-        push({ type: "progress", frame: Number(m[1]), totalFrames: 100 });
-      }
-    };
-
-    proc.stdout?.on("data", onData);
-    proc.stderr?.on("data", onData);
-
-    const onAbort = () => {
-      void killTree(proc);
-    };
-    opts?.signal?.addEventListener("abort", onAbort, { once: true });
-
-    proc.on("error", (err) => {
-      push({ type: "error", message: err.message });
-      end();
-    });
-
-    proc.on("exit", (code) => {
-      opts?.signal?.removeEventListener("abort", onAbort);
-      if (opts?.signal?.aborted) {
-        push({ type: "error", message: "Aborted" });
-      } else if (code === 0) push({ type: "done", outPath });
-      else
-        push({
-          type: "error",
-          message: `ffcreator script exited with code ${code}`,
-        });
-      end();
-    });
-
-    return stream;
   },
 };
