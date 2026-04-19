@@ -1,30 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { availableLibraries } from "@/lib/drivers";
+import { librarySchema, paradigmSchema } from "@/lib/drivers/types";
 import { jsonError, parseJsonBody } from "@/lib/http";
 import { listProjects } from "@/lib/queries/projects";
 import { scaffold } from "@/lib/scaffolder/stamp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const paradigmSchema = z.enum([
-  "react",
-  "html",
-  "generator",
-  "browser-ts",
-  "json-node",
-  "canvas-node",
-]);
-const librarySchema = z.enum([
-  "remotion",
-  "hyperframes",
-  "motion-canvas",
-  "revideo",
-  "diffusion-studio",
-  "editly",
-  "ffcreator",
-]);
 
 const createBodySchema = z.object({
   title: z.string().min(1).max(200),

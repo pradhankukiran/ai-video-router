@@ -1,19 +1,29 @@
-export type Paradigm =
-  | "react"
-  | "html"
-  | "generator"
-  | "browser-ts"
-  | "json-node"
-  | "canvas-node";
+import { z } from "zod";
 
-export type LibraryKey =
-  | "remotion"
-  | "hyperframes"
-  | "motion-canvas"
-  | "revideo"
-  | "diffusion-studio"
-  | "editly"
-  | "ffcreator";
+// Single source of truth for the paradigm/library vocabulary used across
+// the router, the projects API, and the drivers. Declare zod enums
+// first, derive the TS types from them so adding a new value requires
+// only one edit.
+export const paradigmSchema = z.enum([
+  "react",
+  "html",
+  "generator",
+  "browser-ts",
+  "json-node",
+  "canvas-node",
+]);
+export type Paradigm = z.infer<typeof paradigmSchema>;
+
+export const librarySchema = z.enum([
+  "remotion",
+  "hyperframes",
+  "motion-canvas",
+  "revideo",
+  "diffusion-studio",
+  "editly",
+  "ffcreator",
+]);
+export type LibraryKey = z.infer<typeof librarySchema>;
 
 export type RenderEvent =
   | { type: "progress"; frame: number; totalFrames: number }

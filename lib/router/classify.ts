@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { z } from "zod";
+import { librarySchema, paradigmSchema } from "../drivers/types";
 
 const ROUTER_SYSTEM_PROMPT = `You are a router that classifies a natural-language video description into the best code-based video library.
 
@@ -176,25 +177,6 @@ function buildRouterMessages(userPrompt: string) {
     { role: "user" as const, content: userPrompt },
   ];
 }
-
-const librarySchema = z.enum([
-  "remotion",
-  "hyperframes",
-  "motion-canvas",
-  "revideo",
-  "diffusion-studio",
-  "editly",
-  "ffcreator",
-]);
-
-const paradigmSchema = z.enum([
-  "react",
-  "html",
-  "generator",
-  "browser-ts",
-  "json-node",
-  "canvas-node",
-]);
 
 export const routerOutputSchema = z.object({
   title: z.string().min(1).max(120),
