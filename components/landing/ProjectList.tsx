@@ -2,6 +2,15 @@ import type { Route } from "next";
 import Link from "next/link";
 import { listProjects } from "@/lib/queries/projects";
 
+/**
+ * Build a typed href for the project workspace route.
+ * Next 16 typed routes narrow `Route` to a union of static path strings;
+ * the template literal has to be reasserted once, in one place.
+ */
+function projectHref(id: string): Route {
+  return `/projects/${id}` as Route;
+}
+
 export function ProjectList() {
   const projects = listProjects();
   if (projects.length === 0) {
@@ -17,7 +26,7 @@ export function ProjectList() {
       {projects.map((p) => (
         <li key={p.id}>
           <Link
-            href={`/projects/${p.id}` as Route}
+            href={projectHref(p.id)}
             className="flex items-center justify-between gap-4 px-4 py-3 text-sm hover:bg-surface-subtle"
           >
             <div className="min-w-0">

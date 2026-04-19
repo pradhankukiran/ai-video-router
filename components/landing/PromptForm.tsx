@@ -5,6 +5,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 
+/**
+ * Build a typed href for the project workspace route.
+ * Next 16 typed routes narrow `Route` to a union of static path strings;
+ * the template literal has to be reasserted once, in one place.
+ */
+function projectHref(id: string): Route {
+  return `/projects/${id}` as Route;
+}
+
 type Phase = "idle" | "classifying" | "scaffolding";
 
 interface Classification {
@@ -78,7 +87,7 @@ export function PromptForm() {
       if (!res.ok || !data.project) {
         throw new Error(data.error ?? `HTTP ${res.status}`);
       }
-      router.push(`/projects/${data.project.id}` as Route);
+      router.push(projectHref(data.project.id));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
       setPhase("idle");
