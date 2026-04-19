@@ -10,15 +10,14 @@ export const editlyDriver: VideoDriver = {
   paradigm: "json-node",
   label: "Editly",
   templateDir: TEMPLATE_DIR,
+  capabilities: { render: true, preview: false },
 
   async install(projectPath) {
     await runToCompletion("pnpm", ["install"], { cwd: projectPath });
   },
 
-  async startPreview(_projectPath): Promise<PreviewHandle> {
-    throw new Error(
-      "Editly has no live preview. Use the Render button to see a frame-accurate MP4.",
-    );
+  async startPreview(): Promise<PreviewHandle> {
+    throw new Error("preview not supported");
   },
 
   render(projectPath, outPath): AsyncIterable<RenderEvent> {

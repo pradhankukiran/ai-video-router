@@ -2,11 +2,10 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import {
   findFreePort,
-  makeEventStream,
   runToCompletion,
   waitForReady,
 } from "./_process";
-import type { PreviewHandle, RenderEvent, VideoDriver } from "./types";
+import type { PreviewHandle, VideoDriver } from "./types";
 
 const TEMPLATE_DIR = path.join(process.cwd(), "templates", "motion-canvas");
 
@@ -15,6 +14,7 @@ export const motionCanvasDriver: VideoDriver = {
   paradigm: "generator",
   label: "Motion Canvas",
   templateDir: TEMPLATE_DIR,
+  capabilities: { render: false, preview: true },
 
   async install(projectPath) {
     await runToCompletion("pnpm", ["install"], { cwd: projectPath });
@@ -41,16 +41,7 @@ export const motionCanvasDriver: VideoDriver = {
     };
   },
 
-  render(projectPath, outPath): AsyncIterable<RenderEvent> {
-    const { push, end, stream } = makeEventStream<RenderEvent>();
-    push({
-      type: "error",
-      message:
-        "Motion Canvas render is v0.2 scope. Use the Studio UI's Render button for now, then ask Claude Code to copy the output to " +
-        outPath +
-        ".",
-    });
-    end();
-    return stream;
+  render() {
+    throw new Error("render not supported");
   },
 };

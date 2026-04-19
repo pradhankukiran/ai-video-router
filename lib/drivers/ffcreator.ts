@@ -10,15 +10,14 @@ export const ffcreatorDriver: VideoDriver = {
   paradigm: "canvas-node",
   label: "FFCreator",
   templateDir: TEMPLATE_DIR,
+  capabilities: { render: true, preview: false },
 
   async install(projectPath) {
     await runToCompletion("pnpm", ["install"], { cwd: projectPath });
   },
 
-  async startPreview(_projectPath): Promise<PreviewHandle> {
-    throw new Error(
-      "FFCreator has no live preview. Use the Render button to produce an MP4.",
-    );
+  async startPreview(): Promise<PreviewHandle> {
+    throw new Error("preview not supported");
   },
 
   render(projectPath, outPath): AsyncIterable<RenderEvent> {

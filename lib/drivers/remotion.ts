@@ -15,6 +15,7 @@ export const remotionDriver: VideoDriver = {
   paradigm: "react",
   label: "Remotion",
   templateDir: TEMPLATE_DIR,
+  capabilities: { render: true, preview: true },
 
   async install(projectPath) {
     await runToCompletion("pnpm", ["install"], { cwd: projectPath });

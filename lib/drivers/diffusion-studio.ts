@@ -2,11 +2,10 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import {
   findFreePort,
-  makeEventStream,
   runToCompletion,
   waitForReady,
 } from "./_process";
-import type { PreviewHandle, RenderEvent, VideoDriver } from "./types";
+import type { PreviewHandle, VideoDriver } from "./types";
 
 const TEMPLATE_DIR = path.join(
   process.cwd(),
@@ -19,6 +18,7 @@ export const diffusionStudioDriver: VideoDriver = {
   paradigm: "browser-ts",
   label: "Diffusion Studio",
   templateDir: TEMPLATE_DIR,
+  capabilities: { render: false, preview: true },
 
   async install(projectPath) {
     await runToCompletion("pnpm", ["install"], { cwd: projectPath });
@@ -45,16 +45,7 @@ export const diffusionStudioDriver: VideoDriver = {
     };
   },
 
-  render(_projectPath, outPath): AsyncIterable<RenderEvent> {
-    const { push, end, stream } = makeEventStream<RenderEvent>();
-    push({
-      type: "error",
-      message:
-        "Diffusion Studio renders via its browser SDK rather than a Node CLI. Ask Claude Code to wire a programmatic export in the project that writes to " +
-        outPath +
-        ".",
-    });
-    end();
-    return stream;
+  render() {
+    throw new Error("render not supported");
   },
 };

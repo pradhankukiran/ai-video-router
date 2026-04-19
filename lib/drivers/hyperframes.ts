@@ -15,6 +15,7 @@ export const hyperframesDriver: VideoDriver = {
   paradigm: "html",
   label: "Hyperframes",
   templateDir: TEMPLATE_DIR,
+  capabilities: { render: true, preview: true },
 
   async install(projectPath) {
     await runToCompletion("pnpm", ["install"], { cwd: projectPath });
