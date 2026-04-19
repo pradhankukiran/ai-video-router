@@ -13,12 +13,20 @@ export function PreviewPane({ projectId }: { projectId: string }) {
   const [state, setState] = useState<PreviewState>({ status: "loading" });
 
   const refresh = useCallback(async () => {
-    const res = await fetch(`/api/preview/${projectId}`);
-    const data: { status: string; url?: string } = await res.json();
-    if (data.status === "running" && data.url) {
-      setState({ status: "running", url: data.url });
-    } else {
-      setState({ status: "idle" });
+    try {
+      const res = await fetch(`/api/preview/${projectId}`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data: { status: string; url?: string } = await res.json();
+      if (data.status === "running" && data.url) {
+        setState({ status: "running", url: data.url });
+      } else {
+        setState({ status: "idle" });
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setState({ status: "error", message });
     }
   }, [projectId]);
 
@@ -100,8 +108,15 @@ export function PreviewPane({ projectId }: { projectId: string }) {
             title="Preview"
           />
         ) : state.status === "error" ? (
-          <div className="p-4">
+          <div className="space-y-3 p-4">
             <Alert variant="danger">{state.message}</Alert>
+            <button
+              type="button"
+              onClick={() => void refresh()}
+              className="border border-line bg-surface px-3 py-1 text-xs text-ink hover:bg-surface-subtle"
+            >
+              Retry
+            </button>
           </div>
         ) : (
           <p className="flex h-full items-center justify-center text-sm text-ink-faint">
