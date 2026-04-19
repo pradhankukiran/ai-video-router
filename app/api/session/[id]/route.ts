@@ -33,6 +33,7 @@ export async function POST(req: Request, { params }: Ctx) {
         for await (const msg of runSession({
           projectId: id,
           message: parsed.data.message,
+          signal: req.signal,
         })) {
           if (aborted()) break;
           controller.enqueue(write(msg));

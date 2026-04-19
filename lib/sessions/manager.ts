@@ -1,13 +1,10 @@
 import { query, type Options, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { getProject, setProjectSessionId } from "../queries/projects";
 
-export type McpServers = NonNullable<Options["mcpServers"]>;
-
 export interface RunSessionInput {
   projectId: string;
   message: string;
-  mcpServers?: McpServers;
-  allowedTools?: string[];
+  signal?: AbortSignal;
 }
 
 const DEFAULT_ALLOWED_TOOLS = ["Read", "Edit", "Write", "Bash", "Glob", "Grep"];
@@ -23,6 +20,8 @@ const DEFAULT_ALLOWED_TOOLS = ["Read", "Edit", "Write", "Bash", "Glob", "Grep"];
  * - `settingSources: []` keeps the user's global `~/.claude/settings.json`
  *   out of every tenant session (defense-in-depth against accidental
  *   setting leaks).
+ * - If `signal` aborts, we call the SDK iterator's `.return()` so the
+ *   underlying query can release its resources deterministically.
  */
 export async function* runSession(
   input: RunSessionInput,
@@ -34,26 +33,42 @@ export async function* runSession(
 
   const options: Options = {
     cwd: project.path,
-    allowedTools: input.allowedTools ?? DEFAULT_ALLOWED_TOOLS,
+    allowedTools: DEFAULT_ALLOWED_TOOLS,
     settingSources: [],
     ...(project.session_id ? { resume: project.session_id } : {}),
-    ...(input.mcpServers ? { mcpServers: input.mcpServers } : {}),
   };
 
   const q = query({ prompt: input.message, options });
+  const iter = q[Symbol.asyncIterator]();
 
-  for await (const msg of q) {
-    if (
-      msg.type === "system" &&
-      msg.subtype === "init" &&
-      "session_id" in msg &&
-      typeof msg.session_id === "string" &&
-      !project.session_id
-    ) {
-      setProjectSessionId(project.id, msg.session_id);
+  const onAbort = () => {
+    // Fire-and-forget; SDK resources are released on the next tick.
+    void iter.return?.(undefined);
+  };
+  if (input.signal) {
+    if (input.signal.aborted) {
+      void iter.return?.(undefined);
+      return;
     }
-    yield msg;
+    input.signal.addEventListener("abort", onAbort, { once: true });
+  }
+
+  try {
+    while (true) {
+      const { value: msg, done } = await iter.next();
+      if (done) return;
+      if (
+        msg.type === "system" &&
+        msg.subtype === "init" &&
+        "session_id" in msg &&
+        typeof msg.session_id === "string" &&
+        !project.session_id
+      ) {
+        setProjectSessionId(project.id, msg.session_id);
+      }
+      yield msg;
+    }
+  } finally {
+    input.signal?.removeEventListener("abort", onAbort);
   }
 }
-
-export type { SDKMessage };
