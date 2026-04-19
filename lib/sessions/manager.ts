@@ -1,4 +1,11 @@
-import { query, type Options, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
+import path from "node:path";
+import {
+  query,
+  type CanUseTool,
+  type Options,
+  type PermissionResult,
+  type SDKMessage,
+} from "@anthropic-ai/claude-agent-sdk";
 import { getProject, setProjectSessionId } from "../queries/projects";
 
 export interface RunSessionInput {
@@ -8,6 +15,45 @@ export interface RunSessionInput {
 }
 
 const DEFAULT_ALLOWED_TOOLS = ["Read", "Edit", "Write", "Bash", "Glob", "Grep"];
+
+/**
+ * Tools whose inputs carry a `file_path` we can sandbox. We resolve the
+ * path against `projectRoot` and deny anything that escapes it.
+ *
+ * Known limitation: Bash commands receive raw shell strings and are
+ * NOT sandboxed here. An assistant-authored `bash -c "cat /etc/passwd"`
+ * would still succeed. We accept this for now because Bash commands
+ * legitimately need /tmp, $HOME/.cache, and pnpm's global store. If
+ * Bash isolation becomes a requirement, swap in `bubblewrap` / a
+ * per-project container at the spawn layer.
+ */
+const PATH_SANDBOXED_TOOLS = new Set(["Read", "Edit", "Write"]);
+
+function makeCanUseTool(projectRoot: string): CanUseTool {
+  const rootWithSep = projectRoot.endsWith(path.sep)
+    ? projectRoot
+    : projectRoot + path.sep;
+  return async (toolName, input): Promise<PermissionResult> => {
+    if (!PATH_SANDBOXED_TOOLS.has(toolName)) {
+      return { behavior: "allow" };
+    }
+    const raw = input.file_path;
+    if (typeof raw !== "string" || raw.length === 0) {
+      return {
+        behavior: "deny",
+        message: `${toolName}: missing file_path`,
+      };
+    }
+    const resolved = path.resolve(projectRoot, raw);
+    if (resolved !== projectRoot && !resolved.startsWith(rootWithSep)) {
+      return {
+        behavior: "deny",
+        message: `${toolName}: path ${resolved} is outside the project directory`,
+      };
+    }
+    return { behavior: "allow" };
+  };
+}
 
 /**
  * Stream a Claude Code session scoped to a project's working directory.
@@ -35,6 +81,7 @@ export async function* runSession(
     cwd: project.path,
     allowedTools: DEFAULT_ALLOWED_TOOLS,
     settingSources: [],
+    canUseTool: makeCanUseTool(project.path),
     ...(project.session_id ? { resume: project.session_id } : {}),
   };
 
