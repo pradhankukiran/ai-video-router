@@ -25,9 +25,18 @@ export const revideoDriver: VideoDriver = {
 
   async startPreview(projectPath): Promise<PreviewHandle> {
     const port = await findFreePort();
+    // Explicit --host 127.0.0.1 so the server never binds 0.0.0.0.
     const proc = spawn(
       "pnpm",
-      ["exec", "revideo", "serve", "--port", String(port)],
+      [
+        "exec",
+        "revideo",
+        "serve",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        String(port),
+      ],
       {
         cwd: projectPath,
         stdio: ["ignore", "pipe", "pipe"],
