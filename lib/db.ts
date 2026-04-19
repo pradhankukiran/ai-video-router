@@ -1,16 +1,20 @@
 import Database from "better-sqlite3";
 import { DB_FILE, ensureRoot } from "./paths";
 
-let _db: Database.Database | null = null;
+declare global {
+  // eslint-disable-next-line no-var
+  var __avr_db: Database.Database | undefined;
+}
 
 export function getDb(): Database.Database {
-  if (_db) return _db;
+  if (globalThis.__avr_db) return globalThis.__avr_db;
   ensureRoot();
-  _db = new Database(DB_FILE);
-  _db.pragma("journal_mode = WAL");
-  _db.pragma("foreign_keys = ON");
-  migrate(_db);
-  return _db;
+  const db = new Database(DB_FILE);
+  db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
+  migrate(db);
+  globalThis.__avr_db = db;
+  return db;
 }
 
 function migrate(db: Database.Database): void {
