@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
 import net from "node:net";
+import type { PreviewHandle, RenderEvent } from "./types";
 
 const KILL_FALLBACK_MS = 3000;
 
@@ -218,4 +219,137 @@ export function makeEventStream<T>(): {
   };
 
   return { push, end, stream };
+}
+
+/**
+ * Spawn a library's preview dev server, wait for its ready marker, and return
+ * a PreviewHandle. Encapsulates the detached + scrubbed-env + kill-on-timeout
+ * ceremony that every driver's `startPreview` otherwise repeats verbatim.
+ */
+export async function spawnPreview(spec: {
+  cmd: string;
+  args: string[];
+  cwd: string;
+  url: string;
+  readyRe: RegExp;
+  env?: NodeJS.ProcessEnv;
+  timeoutMs?: number;
+}): Promise<PreviewHandle> {
+  const proc = spawn(spec.cmd, spec.args, {
+    cwd: spec.cwd,
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: true,
+    env: spec.env ?? buildChildEnv(),
+  });
+  try {
+    await waitForReady(
+      proc,
+      (text) => spec.readyRe.test(text),
+      spec.timeoutMs,
+    );
+  } catch (err) {
+    await killTree(proc);
+    throw err;
+  }
+  return {
+    url: spec.url,
+    kill: async () => {
+      await killTree(proc);
+    },
+  };
+}
+
+/**
+ * Spawn a library's native renderer and translate its output into a
+ * RenderEvent stream. Encapsulates the short-circuit-on-pre-abort, abort
+ * signal plumbing, log/progress parsing, and done/error transitions that
+ * every render-capable driver otherwise repeats.
+ *
+ * `progressRe` is applied to each log chunk; capture groups 1 and 2 default
+ * to {frame, totalFrames}. Drivers with a non-standard shape (editly reports
+ * a percentage) can override via `progressFromMatch`.
+ */
+export function spawnRender(spec: {
+  cmd: string;
+  args: string[];
+  cwd: string;
+  outPath: string;
+  errorLabel: string;
+  signal?: AbortSignal;
+  env?: NodeJS.ProcessEnv;
+  progressRe?: RegExp;
+  progressFromMatch?: (
+    m: RegExpExecArray,
+  ) => { frame: number; totalFrames: number } | null;
+}): AsyncIterable<RenderEvent> {
+  const { push, end, stream } = makeEventStream<RenderEvent>();
+
+  if (spec.signal?.aborted) {
+    push({ type: "error", message: "Aborted" });
+    end();
+    return stream;
+  }
+
+  const proc = spawn(spec.cmd, spec.args, {
+    cwd: spec.cwd,
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: true,
+    env: spec.env ?? buildChildEnv(),
+  });
+
+  const mapMatch =
+    spec.progressFromMatch ??
+    ((m: RegExpExecArray) => {
+      if (m[1] && m[2]) {
+        return { frame: Number(m[1]), totalFrames: Number(m[2]) };
+      }
+      return null;
+    });
+
+  const onData = (chunk: Buffer) => {
+    const text = chunk.toString();
+    push({ type: "log", line: text });
+    if (spec.progressRe) {
+      const m = spec.progressRe.exec(text);
+      if (m) {
+        const p = mapMatch(m);
+        if (p) {
+          push({
+            type: "progress",
+            frame: p.frame,
+            totalFrames: p.totalFrames,
+          });
+        }
+      }
+    }
+  };
+  proc.stdout?.on("data", onData);
+  proc.stderr?.on("data", onData);
+
+  const onAbort = () => {
+    void killTree(proc);
+  };
+  spec.signal?.addEventListener("abort", onAbort, { once: true });
+
+  proc.on("error", (err) => {
+    push({ type: "error", message: err.message });
+    end();
+  });
+
+  proc.on("exit", (code) => {
+    spec.signal?.removeEventListener("abort", onAbort);
+    if (spec.signal?.aborted) {
+      push({ type: "error", message: "Aborted" });
+    } else if (code === 0) {
+      push({ type: "done", outPath: spec.outPath });
+    } else {
+      push({
+        type: "error",
+        message: `${spec.errorLabel} exited with code ${code}`,
+      });
+    }
+    end();
+  });
+
+  return stream;
 }
