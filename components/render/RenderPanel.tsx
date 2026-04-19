@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { parseSseStream } from "@/lib/sse";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 
 interface RenderRow {
   id: string;
@@ -225,16 +225,17 @@ export function RenderPanel({ projectId }: { projectId: string }) {
             </div>
           )}
           {progress.doneUrl && (
-            <p className="mt-1 text-success">
-              Done.{" "}
-              <a
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-success">Done.</span>
+              <ButtonLink
                 href={progress.doneUrl}
-                className="underline"
+                target="_blank"
                 rel="noreferrer"
+                download
               >
                 Download
-              </a>
-            </p>
+              </ButtonLink>
+            </div>
           )}
         </div>
       )}
@@ -263,13 +264,15 @@ function RenderRowItem({ render }: { render: RenderRow }) {
         </p>
       </div>
       {render.status === "done" ? (
-        <a
+        <ButtonLink
           href={`/api/renders/${render.id}/file`}
-          className="shrink-0 border border-line bg-surface px-2 py-1 text-ink hover:bg-surface-subtle"
+          target="_blank"
           rel="noreferrer"
+          download
+          className="shrink-0"
         >
           Download
-        </a>
+        </ButtonLink>
       ) : null}
     </li>
   );

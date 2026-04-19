@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 
 type PreviewState =
   | { status: "idle" }
@@ -74,14 +74,13 @@ export function PreviewPane({ projectId }: { projectId: string }) {
         <div className="flex items-center gap-2 text-xs">
           {state.status === "running" ? (
             <>
-              <a
+              <ButtonLink
                 href={state.url}
                 target="_blank"
                 rel="noreferrer"
-                className="border border-line bg-surface px-3 py-1 text-xs text-ink hover:bg-surface-subtle"
               >
                 Open
-              </a>
+              </ButtonLink>
               <Button onClick={() => void stop()}>Stop</Button>
             </>
           ) : (

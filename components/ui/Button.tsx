@@ -1,8 +1,12 @@
 "use client";
 
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type {
+  AnchorHTMLAttributes,
+  ButtonHTMLAttributes,
+  ReactNode,
+} from "react";
 
-type ButtonVariant = "primary" | "secondary" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "danger";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -10,7 +14,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const BASE =
-  "px-3 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-block px-3 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-50";
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
@@ -19,6 +23,13 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   danger:
     "border border-danger/40 bg-surface text-danger hover:bg-[color:var(--color-danger)]/10",
 };
+
+export function buttonClassName(
+  variant: ButtonVariant = "secondary",
+  extra = "",
+): string {
+  return `${BASE} ${VARIANT_CLASSES[variant]} ${extra}`.trim();
+}
 
 export function Button({
   variant = "secondary",
@@ -30,10 +41,28 @@ export function Button({
   return (
     <button
       type={type ?? "button"}
-      className={`${BASE} ${VARIANT_CLASSES[variant]} ${className}`.trim()}
+      className={buttonClassName(variant, className)}
       {...rest}
     >
       {children}
     </button>
+  );
+}
+
+interface ButtonLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+  variant?: ButtonVariant;
+  children: ReactNode;
+}
+
+export function ButtonLink({
+  variant = "secondary",
+  className = "",
+  children,
+  ...rest
+}: ButtonLinkProps) {
+  return (
+    <a className={buttonClassName(variant, className)} {...rest}>
+      {children}
+    </a>
   );
 }

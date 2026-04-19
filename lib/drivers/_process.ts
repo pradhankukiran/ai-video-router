@@ -111,7 +111,12 @@ export function runToCompletion(
   opts: SpawnOptions,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(cmd, args, { stdio: "inherit", ...opts });
+    // Default to the scrubbed child env so callers (in particular
+    // driver `install()` which runs `pnpm install` + lifecycle scripts)
+    // don't leak ANTHROPIC_API_KEY / CEREBRAS_API_KEY / GROQ_API_KEY
+    // into third-party install hooks by inheriting `process.env`.
+    const env = opts.env ?? buildChildEnv();
+    const proc = spawn(cmd, args, { stdio: "inherit", ...opts, env });
     proc.on("error", reject);
     proc.on("exit", (code) =>
       code === 0
