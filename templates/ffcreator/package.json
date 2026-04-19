@@ -1,0 +1,15 @@
+{
+  "name": "video-project",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FFCreator video project scaffolded by ai-video-router",
+  "scripts": {
+    "build": "node index.js"
+  },
+  "dependencies": {
+    "ffcreator": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
