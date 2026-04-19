@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { ChatPanel } from "@/components/chat/ChatPanel";
+import { CommandTrigger } from "@/components/command/CommandTrigger";
 import { PreviewPane } from "@/components/preview/PreviewPane";
-import { ProjectActions } from "@/components/project/ProjectActions";
-import { ProjectMeta } from "@/components/project/ProjectMeta";
-import { RenderPanel } from "@/components/render/RenderPanel";
+import { WorkspaceSidebar } from "@/components/project/WorkspaceSidebar";
+import { Badge } from "@/components/ui/Badge";
+import { Label } from "@/components/ui/Label";
 import { getProject } from "@/lib/queries/projects";
 
 interface Props {
@@ -24,15 +25,19 @@ export default async function ProjectWorkspace({ params }: Props) {
     : `${project.prompt}\n\nThis is a fresh ${project.library} project scaffold with placeholder text. Read the README to understand the structure, then edit the source so the video matches the description above.`;
 
   return (
-    <div className="grid h-dvh grid-cols-[minmax(0,1fr)_minmax(0,1.8fr)_280px] divide-x divide-line">
+    <div className="grid h-dvh grid-cols-[minmax(0,1fr)_minmax(0,1.8fr)_320px] divide-x divide-border">
       <section className="flex min-h-0 flex-col">
-        <header className="border-b border-line px-4 py-3">
-          <p className="text-[10px] uppercase tracking-wider text-ink-faint">
-            project · {project.library}
-          </p>
-          <h1 className="truncate text-sm font-medium text-ink">
-            {project.title}
-          </h1>
+        <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+          <div className="min-w-0">
+            <Label>project</Label>
+            <h1 className="mt-0.5 flex items-center gap-2">
+              <span className="truncate text-sm font-medium text-text-primary">
+                {project.title}
+              </span>
+              <Badge tone="neutral">{project.library}</Badge>
+            </h1>
+          </div>
+          <CommandTrigger />
         </header>
         <div className="min-h-0 flex-1">
           <ChatPanel projectId={project.id} initialPrompt={initialPrompt} />
@@ -43,17 +48,8 @@ export default async function ProjectWorkspace({ params }: Props) {
         <PreviewPane projectId={project.id} />
       </section>
 
-      <aside className="flex min-h-0 flex-col divide-y divide-line">
-        <header className="px-3 py-3">
-          <p className="text-[10px] uppercase tracking-wider text-ink-faint">
-            project
-          </p>
-        </header>
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <ProjectMeta project={project} />
-          <RenderPanel projectId={project.id} />
-          <ProjectActions projectId={project.id} />
-        </div>
+      <aside className="flex min-h-0 flex-col">
+        <WorkspaceSidebar project={project} />
       </aside>
     </div>
   );
