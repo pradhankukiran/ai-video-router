@@ -40,12 +40,3 @@ export async function parseJsonBody<T>(
   }
   return parsed.data;
 }
-
-/**
- * Serialise an error into a single SSE frame.
- * Returns a string ending in `\n\n` ready to be written to a text/event-stream.
- */
-export function sseErrorFrame(message: string): string {
-  const payload = JSON.stringify({ type: "error", message });
-  return `data: ${payload}\n\n`;
-}
