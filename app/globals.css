@@ -75,7 +75,10 @@ html,
 body {
   background: var(--color-bg);
   color: var(--color-text-primary);
-  font-family: var(--font-sans);
+  /* Terminal Paper: mono is the UI font of record. Prose text blocks
+   * explicitly opt into font-sans; everything else (labels, buttons,
+   * chrome, status indicators) stays mono. */
+  font-family: var(--font-mono);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
