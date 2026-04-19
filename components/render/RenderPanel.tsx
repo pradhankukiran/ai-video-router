@@ -27,6 +27,7 @@ interface RenderProgress {
   frame: number;
   totalFrames: number;
   error: string | null;
+  info: string | null;
   doneUrl: string | null;
 }
 
@@ -54,7 +55,13 @@ export function RenderPanel({ projectId }: { projectId: string }) {
   const start = useCallback(async () => {
     if (running) return;
     setRunning(true);
-    setProgress({ frame: 0, totalFrames: 0, error: null, doneUrl: null });
+    setProgress({
+      frame: 0,
+      totalFrames: 0,
+      error: null,
+      info: null,
+      doneUrl: null,
+    });
     const controller = new AbortController();
     abortRef.current = controller;
     let settled = false;
@@ -69,6 +76,7 @@ export function RenderPanel({ projectId }: { projectId: string }) {
           frame: 0,
           totalFrames: 0,
           error: `HTTP ${res.status}`,
+          info: null,
           doneUrl: null,
         });
         settled = true;
@@ -89,7 +97,13 @@ export function RenderPanel({ projectId }: { projectId: string }) {
           setProgress((p) =>
             p
               ? { ...p, error: ev.message }
-              : { frame: 0, totalFrames: 0, error: ev.message, doneUrl: null },
+              : {
+                  frame: 0,
+                  totalFrames: 0,
+                  error: ev.message,
+                  info: null,
+                  doneUrl: null,
+                },
           );
         } else if (ev.type === "settled") {
           settled = true;
@@ -106,14 +120,20 @@ export function RenderPanel({ projectId }: { projectId: string }) {
       if (controller.signal.aborted) {
         settled = true;
         setProgress((p) =>
-          p ? { ...p, error: "Render cancelled" } : null,
+          p ? { ...p, info: "Render cancelled" } : null,
         );
       } else {
         const message = err instanceof Error ? err.message : String(err);
         setProgress((p) =>
           p
             ? { ...p, error: message }
-            : { frame: 0, totalFrames: 0, error: message, doneUrl: null },
+            : {
+                frame: 0,
+                totalFrames: 0,
+                error: message,
+                info: null,
+                doneUrl: null,
+              },
         );
       }
     } finally {
@@ -125,6 +145,7 @@ export function RenderPanel({ projectId }: { projectId: string }) {
                 frame: 0,
                 totalFrames: 0,
                 error: "Render stream ended unexpectedly",
+                info: null,
                 doneUrl: null,
               },
         );
@@ -181,7 +202,26 @@ export function RenderPanel({ projectId }: { projectId: string }) {
           )}
           {progress.error && (
             <div className="mt-1">
-              <Alert variant="danger">{progress.error}</Alert>
+              <Alert
+                variant="danger"
+                onDismiss={() =>
+                  setProgress((p) => (p ? { ...p, error: null } : p))
+                }
+              >
+                {progress.error}
+              </Alert>
+            </div>
+          )}
+          {progress.info && (
+            <div className="mt-1">
+              <Alert
+                variant="info"
+                onDismiss={() =>
+                  setProgress((p) => (p ? { ...p, info: null } : p))
+                }
+              >
+                {progress.info}
+              </Alert>
             </div>
           )}
           {progress.doneUrl && (
