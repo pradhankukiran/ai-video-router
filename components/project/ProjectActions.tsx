@@ -1,20 +1,31 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
+
+const CONFIRM_WINDOW_MS = 5000;
 
 export function ProjectActions({ projectId }: { projectId: string }) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
+  const [armed, setArmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function onDelete() {
-    if (deleting) return;
-    if (!confirm("Delete this project from the database? Scaffolded files on disk stay under ~/.ai-video-router/projects/.")) {
-      return;
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
     }
+  }, []);
+
+  useEffect(() => clearTimer, [clearTimer]);
+
+  async function confirmDelete() {
     setDeleting(true);
+    setArmed(false);
+    clearTimer();
     setError(null);
     try {
       const res = await fetch(`/api/projects/${projectId}`, {
@@ -33,16 +44,42 @@ export function ProjectActions({ projectId }: { projectId: string }) {
     }
   }
 
+  function onClick() {
+    if (deleting) return;
+    if (armed) {
+      void confirmDelete();
+      return;
+    }
+    setArmed(true);
+    clearTimer();
+    timerRef.current = setTimeout(() => {
+      setArmed(false);
+      timerRef.current = null;
+    }, CONFIRM_WINDOW_MS);
+  }
+
+  const label = deleting
+    ? "Deleting…"
+    : armed
+      ? "Click again to confirm"
+      : "Delete project";
+
   return (
     <div className="border-t border-line px-3 py-3 text-xs">
       <button
         type="button"
-        onClick={() => void onDelete()}
+        onClick={onClick}
         disabled={deleting}
+        aria-live="polite"
         className="w-full border border-danger/40 bg-surface px-2 py-1 text-danger hover:bg-[color:var(--color-danger)]/5 disabled:opacity-50"
       >
-        {deleting ? "Deleting…" : "Delete project"}
+        {label}
       </button>
+      {armed && !deleting && (
+        <p className="mt-1 text-ink-faint">
+          Scaffolded files on disk stay under ~/.ai-video-router/projects/.
+        </p>
+      )}
       {error && (
         <div className="mt-2">
           <Alert variant="danger" onDismiss={() => setError(null)}>
