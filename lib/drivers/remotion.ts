@@ -60,9 +60,13 @@ export const remotionDriver: VideoDriver = {
   render(projectPath, outPath, opts): AsyncIterable<RenderEvent> {
     const { push, end, stream } = makeEventStream<RenderEvent>();
 
+    // Remotion v4's CLI signature is `remotion render <entry> <composition>
+    // <out>`. Pass the entry explicitly (`src/index.ts` matches our
+    // template scaffold) so the command doesn't depend on Remotion's
+    // default-entry discovery.
     const proc = spawn(
       "pnpm",
-      ["exec", "remotion", "render", "Main", outPath],
+      ["exec", "remotion", "render", "src/index.ts", "Main", outPath],
       {
         cwd: projectPath,
         stdio: ["ignore", "pipe", "pipe"],
