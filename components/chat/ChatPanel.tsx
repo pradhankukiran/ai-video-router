@@ -57,6 +57,14 @@ export function ChatPanel({ projectId }: { projectId: string }) {
     }
   }, [entries]);
 
+  // Abort any in-flight stream on unmount so a route change doesn't leak
+  // server-side SSE handlers.
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
   const cancel = useCallback(() => {
     abortRef.current?.abort();
   }, []);

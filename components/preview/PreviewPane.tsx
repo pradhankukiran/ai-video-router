@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button, ButtonLink } from "@/components/ui/Button";
 
@@ -12,10 +12,16 @@ type PreviewState =
 
 export function PreviewPane({ projectId }: { projectId: string }) {
   const [state, setState] = useState<PreviewState>({ status: "loading" });
+  const abortRef = useRef<AbortController | null>(null);
 
   const refresh = useCallback(async () => {
+    const controller = new AbortController();
+    abortRef.current?.abort();
+    abortRef.current = controller;
     try {
-      const res = await fetch(`/api/preview/${projectId}`);
+      const res = await fetch(`/api/preview/${projectId}`, {
+        signal: controller.signal,
+      });
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
@@ -26,41 +32,70 @@ export function PreviewPane({ projectId }: { projectId: string }) {
         setState({ status: "idle" });
       }
     } catch (err: unknown) {
+      if (controller.signal.aborted) return;
       const message = err instanceof Error ? err.message : String(err);
       setState({ status: "error", message });
     }
   }, [projectId]);
 
   const start = useCallback(async () => {
+    const controller = new AbortController();
+    abortRef.current?.abort();
+    abortRef.current = controller;
     setState({ status: "loading" });
-    const res = await fetch(`/api/preview/${projectId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-avr": "1" },
-    });
-    const data: { status: string; url?: string; error?: string } =
-      await res.json();
-    if (!res.ok || !data.url) {
-      setState({
-        status: "error",
-        message: data.error ?? `HTTP ${res.status}`,
+    try {
+      const res = await fetch(`/api/preview/${projectId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-avr": "1" },
+        signal: controller.signal,
       });
-      return;
+      const data: { status: string; url?: string; error?: string } =
+        await res.json();
+      if (!res.ok || !data.url) {
+        setState({
+          status: "error",
+          message: data.error ?? `HTTP ${res.status}`,
+        });
+        return;
+      }
+      setState({ status: "running", url: data.url });
+    } catch (err: unknown) {
+      if (controller.signal.aborted) return;
+      const message = err instanceof Error ? err.message : String(err);
+      setState({ status: "error", message });
     }
-    setState({ status: "running", url: data.url });
   }, [projectId]);
 
   const stop = useCallback(async () => {
+    const controller = new AbortController();
+    abortRef.current?.abort();
+    abortRef.current = controller;
     setState({ status: "loading" });
-    await fetch(`/api/preview/${projectId}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json", "x-avr": "1" },
-    });
+    try {
+      await fetch(`/api/preview/${projectId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", "x-avr": "1" },
+        signal: controller.signal,
+      });
+    } catch (err: unknown) {
+      if (controller.signal.aborted) return;
+      throw err;
+    }
+    if (controller.signal.aborted) return;
     await refresh();
   }, [projectId, refresh]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Abort any in-flight fetch on unmount so a route change doesn't leak
+  // server-side handlers.
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   return (
     <div className="flex h-full flex-col">

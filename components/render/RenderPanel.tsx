@@ -48,6 +48,14 @@ export function RenderPanel({ projectId }: { projectId: string }) {
     void refresh();
   }, [refresh]);
 
+  // Abort any in-flight render stream on unmount so a route change doesn't
+  // leak server-side SSE handlers.
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
   const cancel = useCallback(() => {
     abortRef.current?.abort();
   }, []);
