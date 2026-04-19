@@ -1,6 +1,91 @@
 import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
 import net from "node:net";
 
+const KILL_FALLBACK_MS = 3000;
+
+/**
+ * Kill a detached child AND its descendants via its process group.
+ *
+ * Drivers spawn e.g. `pnpm exec remotion …` which forks a grandchild; a plain
+ * `proc.kill("SIGTERM")` only signals `pnpm` and orphans the real tool. We
+ * therefore spawn with `detached: true` (new process group) and target the
+ * whole group with a negative pid. If the group is still alive after the
+ * grace window we escalate to SIGKILL.
+ */
+export async function killTree(proc: ChildProcess): Promise<void> {
+  if (proc.exitCode !== null || proc.signalCode !== null) return;
+  const pid = proc.pid;
+  if (typeof pid !== "number") return;
+
+  const sendGroup = (signal: NodeJS.Signals) => {
+    try {
+      process.kill(-pid, signal);
+    } catch {
+      // Group may have already exited, or we didn't actually create one;
+      // fall back to targeting the direct child.
+      try {
+        proc.kill(signal);
+      } catch {
+        /* already dead */
+      }
+    }
+  };
+
+  const exited = new Promise<void>((resolve) => {
+    if (proc.exitCode !== null || proc.signalCode !== null) return resolve();
+    proc.once("exit", () => resolve());
+  });
+
+  sendGroup("SIGTERM");
+
+  const escalate = setTimeout(() => sendGroup("SIGKILL"), KILL_FALLBACK_MS);
+  try {
+    await exited;
+  } finally {
+    clearTimeout(escalate);
+  }
+}
+
+/**
+ * Build a minimal env for spawned children.
+ *
+ * Default behavior of Node's `spawn` inherits `process.env` wholesale, which
+ * would leak API keys (ANTHROPIC_API_KEY, CEREBRAS_API_KEY, GROQ_API_KEY, …)
+ * and arbitrary secrets into every driver subprocess. We ship a strict
+ * allow-list instead, and defensively drop anything matching the secret
+ * pattern even if it's one of the allow-listed keys. Callers can pass `extra`
+ * for driver-specific vars (e.g. ffcreator's `AVR_OUTPUT_PATH`).
+ */
+export function buildChildEnv(
+  extra?: Record<string, string>,
+): Record<string, string> {
+  const ALLOW = [
+    "PATH",
+    "HOME",
+    "USER",
+    "LANG",
+    "LC_ALL",
+    "NODE_ENV",
+    "TERM",
+    "TMPDIR",
+  ] as const;
+  const SECRET_RE = /API_KEY|TOKEN|SECRET/i;
+  const env: Record<string, string> = {};
+  for (const k of ALLOW) {
+    const v = process.env[k];
+    if (typeof v === "string" && !SECRET_RE.test(k)) {
+      env[k] = v;
+    }
+  }
+  if (extra) {
+    for (const [k, v] of Object.entries(extra)) {
+      if (SECRET_RE.test(k)) continue;
+      env[k] = v;
+    }
+  }
+  return env;
+}
+
 export function findFreePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const srv = net.createServer();
