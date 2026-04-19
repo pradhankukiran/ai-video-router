@@ -39,15 +39,5 @@ function migrate(db: Database.Database): void {
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
     );
     CREATE INDEX IF NOT EXISTS renders_project ON renders(project_id);
-
-    CREATE TABLE IF NOT EXISTS messages (
-      id            TEXT PRIMARY KEY,
-      project_id    TEXT NOT NULL,
-      role          TEXT NOT NULL,
-      content_json  TEXT NOT NULL,
-      created_at    INTEGER NOT NULL,
-      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-    );
-    CREATE INDEX IF NOT EXISTS messages_project ON messages(project_id);
   `);
 }
