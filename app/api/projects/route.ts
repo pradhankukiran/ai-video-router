@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { scaffold } from "@/lib/scaffolder/stamp";
-import { listProjects } from "@/lib/queries/projects";
 import { availableLibraries } from "@/lib/drivers";
+import { jsonError, parseJsonBody } from "@/lib/http";
+import { listProjects } from "@/lib/queries/projects";
+import { scaffold } from "@/lib/scaffolder/stamp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,22 +41,21 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const json = await req.json();
-  const parsed = createBodySchema.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid body", issues: parsed.error.issues },
-      { status: 400 },
+  const parsed = await parseJsonBody(req, createBodySchema);
+  if (parsed instanceof Response) return parsed;
+
+  if (!availableLibraries().includes(parsed.library)) {
+    return jsonError(
+      400,
+      `Library "${parsed.library}" is not implemented yet`,
     );
   }
 
-  if (!availableLibraries().includes(parsed.data.library)) {
-    return NextResponse.json(
-      { error: `Library "${parsed.data.library}" is not implemented yet` },
-      { status: 400 },
-    );
+  try {
+    const { project } = await scaffold(parsed);
+    return NextResponse.json({ project }, { status: 201 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return jsonError(500, `Failed to scaffold project: ${message}`);
   }
-
-  const { project } = await scaffold(parsed.data);
-  return NextResponse.json({ project }, { status: 201 });
 }
