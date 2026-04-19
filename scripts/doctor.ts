@@ -79,17 +79,11 @@ check("Anthropic auth source", () => {
   return "env var not set — will use ~/.claude/ subscription login";
 });
 
-const router = process.env.ROUTER_PROVIDER;
 check("Router credentials", () => {
-  if (router === "cerebras" || (!router && process.env.CEREBRAS_API_KEY)) {
-    if (!process.env.CEREBRAS_API_KEY) throw new Error("CEREBRAS_API_KEY missing");
-    return "cerebras";
-  }
-  if (router === "groq" || (!router && process.env.GROQ_API_KEY)) {
-    if (!process.env.GROQ_API_KEY) throw new Error("GROQ_API_KEY missing");
-    return "groq";
-  }
-  throw new Error("no router key (CEREBRAS_API_KEY or GROQ_API_KEY)");
+  if (!process.env.GROQ_API_KEY) throw new Error("GROQ_API_KEY missing");
+  const model =
+    process.env.ROUTER_MODEL ?? "meta-llama/llama-4-scout-17b-16e-instruct";
+  return `groq · ${model}`;
 });
 
 let exit = 0;
