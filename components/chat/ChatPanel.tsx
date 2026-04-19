@@ -162,7 +162,6 @@ export function ChatPanel({ projectId }: { projectId: string }) {
           }}
           placeholder="Describe the change…"
           rows={3}
-          disabled={streaming}
           className="w-full resize-none overflow-y-auto border border-line bg-surface px-2 py-1 text-sm focus:border-accent"
         />
         <div className="mt-2 flex items-center justify-between text-xs text-ink-muted">
