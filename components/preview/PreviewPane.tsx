@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Alert } from "@/components/ui/Alert";
 
 type PreviewState =
   | { status: "idle" }
@@ -93,11 +94,8 @@ export function PreviewPane({ projectId }: { projectId: string }) {
             title="Preview"
           />
         ) : state.status === "error" ? (
-          <div className="p-4 text-sm text-danger">
-            <p className="mb-1 text-[10px] uppercase tracking-wider">
-              preview error
-            </p>
-            <p className="whitespace-pre-wrap">{state.message}</p>
+          <div className="p-4">
+            <Alert variant="danger">{state.message}</Alert>
           </div>
         ) : (
           <p className="flex h-full items-center justify-center text-sm text-ink-faint">

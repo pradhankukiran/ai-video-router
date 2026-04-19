@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Alert } from "@/components/ui/Alert";
 
 export function ProjectActions({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -42,7 +43,11 @@ export function ProjectActions({ projectId }: { projectId: string }) {
         {deleting ? "Deleting…" : "Delete project"}
       </button>
       {error && (
-        <p className="mt-2 text-danger">{error}</p>
+        <div className="mt-2">
+          <Alert variant="danger" onDismiss={() => setError(null)}>
+            {error}
+          </Alert>
+        </div>
       )}
     </div>
   );

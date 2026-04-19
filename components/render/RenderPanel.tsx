@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { parseSseStream } from "@/lib/sse";
+import { Alert } from "@/components/ui/Alert";
 
 interface RenderRow {
   id: string;
@@ -132,9 +133,9 @@ export function RenderPanel({ projectId }: { projectId: string }) {
             </div>
           )}
           {progress.error && (
-            <p className="mt-1 whitespace-pre-wrap text-danger">
-              {progress.error}
-            </p>
+            <div className="mt-1">
+              <Alert variant="danger">{progress.error}</Alert>
+            </div>
           )}
           {progress.doneUrl && (
             <p className="mt-1 text-success">

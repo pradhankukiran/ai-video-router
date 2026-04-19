@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { parseSseStream } from "@/lib/sse";
+import { Alert } from "@/components/ui/Alert";
 
 type UserPrompt = { kind: "user-prompt"; id: string; text: string };
 type StreamEnd = { kind: "stream-end"; id: string };
@@ -138,12 +139,7 @@ function EntryRow({ entry }: { entry: ChatEntry }) {
     );
   }
   if (entry.kind === "stream-error") {
-    return (
-      <div className="border border-danger/30 bg-[color:var(--color-danger)]/5 px-3 py-2 text-sm text-danger">
-        <p className="mb-1 text-[10px] uppercase tracking-wider">error</p>
-        <p className="whitespace-pre-wrap">{entry.error}</p>
-      </div>
-    );
+    return <Alert variant="danger">{entry.error}</Alert>;
   }
   return <SdkRow message={entry.message} />;
 }

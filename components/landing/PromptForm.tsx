@@ -3,6 +3,7 @@
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Alert } from "@/components/ui/Alert";
 
 type Phase = "idle" | "classifying" | "scaffolding";
 
@@ -127,9 +128,11 @@ export function PromptForm() {
       )}
 
       {error && (
-        <p className="mt-3 border border-danger/30 bg-[color:var(--color-danger)]/5 px-2 py-1 text-xs text-danger">
-          {error}
-        </p>
+        <div className="mt-3">
+          <Alert variant="danger" onDismiss={() => setError(null)}>
+            {error}
+          </Alert>
+        </div>
       )}
     </form>
   );
