@@ -43,8 +43,8 @@ export function Alert({ variant, children, onDismiss }: AlertProps) {
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Dismiss"
-          className="shrink-0 border border-current px-1 py-0 text-[10px] uppercase tracking-wider opacity-70 hover:opacity-100"
+          aria-label={`Dismiss ${LABELS[variant]}`}
+          className="shrink-0 border border-current px-1 py-0 text-[10px] uppercase tracking-wider opacity-70 hover:opacity-100 focus-visible:opacity-100"
         >
           dismiss
         </button>
