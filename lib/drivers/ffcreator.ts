@@ -24,7 +24,7 @@ export const ffcreatorDriver: VideoDriver = {
   render(projectPath, outPath): AsyncIterable<RenderEvent> {
     const { push, end, stream } = makeEventStream<RenderEvent>();
 
-    const proc = spawn("node", ["index.js"], {
+    const proc = spawn("pnpm", ["run", "build"], {
       cwd: projectPath,
       stdio: ["ignore", "pipe", "pipe"],
       env: { ...process.env, AVR_OUTPUT_PATH: outPath },
