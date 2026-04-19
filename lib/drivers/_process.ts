@@ -37,6 +37,12 @@ export function runToCompletion(
 /**
  * Wait until `ready(chunk)` returns true on stdout/stderr data, or reject on
  * timeout / early process exit.
+ *
+ * After readiness is detected we leave a permanent discard listener on both
+ * streams. Node's default pipe buffer is 64KB; if nothing is consuming the
+ * child's stdout/stderr the child will block on write() and deadlock. Callers
+ * that want the output should attach their own listener BEFORE awaiting
+ * readiness, or replace the discard by re-attaching.
  */
 export function waitForReady(
   proc: ChildProcess,
@@ -48,6 +54,9 @@ export function waitForReady(
       () => reject(new Error("Process did not report ready in time")),
       timeoutMs,
     );
+    const discard = () => {
+      /* keep the pipe flowing so the child doesn't block on write() */
+    };
     const onData = (chunk: Buffer) => {
       if (ready(chunk.toString())) {
         cleanup();
@@ -63,6 +72,8 @@ export function waitForReady(
       proc.stdout?.off("data", onData);
       proc.stderr?.off("data", onData);
       proc.off("exit", onExit);
+      proc.stdout?.on("data", discard);
+      proc.stderr?.on("data", discard);
     };
     proc.stdout?.on("data", onData);
     proc.stderr?.on("data", onData);
