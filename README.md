@@ -14,7 +14,7 @@ Local web app that routes an intent to one of:
 | Editly            | JSON-declarative Node | Simple cuts & montages         |
 | FFCreator         | Canvas + ffmpeg       | Canvas-heavy compositions      |
 
-Cerebras/Groq Llama 3.3 picks the library from your prompt; the scaffolder stamps a starter project under `~/.ai-video-router/projects/<id>/`; a scoped Claude Code session (via `@anthropic-ai/claude-agent-sdk`) iterates inside it; the preview pane iframes the library's own dev server; the render pane streams progress from the library's native renderer to an MP4.
+Groq Llama 4 Scout picks the library from your prompt; the scaffolder stamps a starter project under `~/.ai-video-router/projects/<id>/`; a scoped Claude Code session (via `@anthropic-ai/claude-agent-sdk`) iterates inside it; the preview pane iframes the library's own dev server; the render pane streams progress from the library's native renderer to an MP4.
 
 ## Status
 
@@ -27,7 +27,7 @@ v0.1 — usable end-to-end for Remotion and Hyperframes. The other five librarie
 - `ffmpeg` on PATH (for MP4 export)
 - Chrome / Chromium (for Remotion, Diffusion Studio, FFCreator)
 - A working `claude` CLI login on the same machine (the editing session inherits your auth)
-- A Cerebras or Groq API key for the router
+- A Groq API key for the router (https://console.groq.com)
 
 Run `pnpm run doctor` to verify all of the above at once.
 
@@ -46,7 +46,7 @@ Open http://localhost:3000 and describe your video. The router classifies it, th
 
 ```
 app/                   # Next.js App Router (UI + API routes)
-  api/router/          # POST: Cerebras/Groq classification
+  api/router/          # POST: Groq Llama 4 classification
   api/projects/[id]    # project CRUD
   api/session/[id]     # SSE: Claude Code chat
   api/preview/[id]     # start/stop/status for library dev server
@@ -55,7 +55,7 @@ app/                   # Next.js App Router (UI + API routes)
 components/            # React UI (chat, preview, render, landing)
 lib/
   drivers/             # VideoDriver impls — one file per library
-  router/              # Cerebras/Groq classifier + prompts
+  router/              # Groq Llama 4 classifier + prompt
   sessions/            # Claude Agent SDK wrapper
   scaffolder/          # template stamper
   preview/             # in-memory preview handle registry

@@ -106,7 +106,7 @@ export function PromptForm() {
       </label>
       <div className="mt-4 flex items-center justify-between gap-4">
         <p className="text-xs text-ink-muted">
-          Cerebras/Groq Llama 3.3 routes to the best library.
+          Groq Llama 4 Scout routes to the best library.
         </p>
         {!classification && (
           <Button
