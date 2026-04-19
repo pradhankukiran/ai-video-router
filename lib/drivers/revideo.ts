@@ -1,0 +1,88 @@
+import { spawn } from "node:child_process";
+import path from "node:path";
+import {
+  findFreePort,
+  makeEventStream,
+  runToCompletion,
+  waitForReady,
+} from "./_process";
+import type { PreviewHandle, RenderEvent, VideoDriver } from "./types";
+
+const TEMPLATE_DIR = path.join(process.cwd(), "templates", "revideo");
+
+export const revideoDriver: VideoDriver = {
+  key: "revideo",
+  paradigm: "generator",
+  label: "Revideo",
+  templateDir: TEMPLATE_DIR,
+
+  async install(projectPath) {
+    await runToCompletion("pnpm", ["install"], { cwd: projectPath });
+  },
+
+  async startPreview(projectPath): Promise<PreviewHandle> {
+    const port = await findFreePort();
+    const proc = spawn(
+      "pnpm",
+      ["exec", "revideo", "serve", "--port", String(port)],
+      { cwd: projectPath, stdio: ["ignore", "pipe", "pipe"] },
+    );
+    try {
+      await waitForReady(proc, (text) =>
+        /localhost:|ready in|server running/i.test(text),
+      );
+    } catch (err) {
+      proc.kill("SIGTERM");
+      throw err;
+    }
+    return {
+      url: `http://127.0.0.1:${port}`,
+      kill: async () => {
+        proc.kill("SIGTERM");
+      },
+    };
+  },
+
+  render(projectPath, outPath): AsyncIterable<RenderEvent> {
+    const { push, end, stream } = makeEventStream<RenderEvent>();
+
+    const proc = spawn(
+      "pnpm",
+      ["exec", "revideo", "render", "--output", outPath],
+      { cwd: projectPath, stdio: ["ignore", "pipe", "pipe"] },
+    );
+
+    const onData = (chunk: Buffer) => {
+      const text = chunk.toString();
+      push({ type: "log", line: text });
+      const m = /frame\s+(\d+)\s*\/\s*(\d+)/i.exec(text);
+      if (m?.[1] && m[2]) {
+        push({
+          type: "progress",
+          frame: Number(m[1]),
+          totalFrames: Number(m[2]),
+        });
+      }
+    };
+
+    proc.stdout?.on("data", onData);
+    proc.stderr?.on("data", onData);
+
+    proc.on("error", (err) => {
+      push({ type: "error", message: err.message });
+      end();
+    });
+
+    proc.on("exit", (code) => {
+      if (code === 0) push({ type: "done", outPath });
+      else
+        push({
+          type: "error",
+          message: `revideo render exited with code ${code}`,
+        });
+      end();
+    });
+
+    return stream;
+  },
+};
