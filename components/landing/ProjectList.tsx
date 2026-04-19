@@ -1,15 +1,6 @@
-import type { Route } from "next";
 import Link from "next/link";
+import { projectHref } from "@/components/routes";
 import { listProjects } from "@/lib/queries/projects";
-
-/**
- * Build a typed href for the project workspace route.
- * Next 16 typed routes narrow `Route` to a union of static path strings;
- * the template literal has to be reasserted once, in one place.
- */
-function projectHref(id: string): Route {
-  return `/projects/${id}` as Route;
-}
 
 export function ProjectList() {
   const projects = listProjects();

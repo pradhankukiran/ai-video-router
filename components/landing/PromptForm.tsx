@@ -1,19 +1,10 @@
 "use client";
 
-import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { projectHref } from "@/components/routes";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-
-/**
- * Build a typed href for the project workspace route.
- * Next 16 typed routes narrow `Route` to a union of static path strings;
- * the template literal has to be reasserted once, in one place.
- */
-function projectHref(id: string): Route {
-  return `/projects/${id}` as Route;
-}
 
 type Phase = "idle" | "classifying" | "scaffolding";
 

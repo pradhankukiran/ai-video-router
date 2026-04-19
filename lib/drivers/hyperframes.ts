@@ -56,6 +56,12 @@ export const hyperframesDriver: VideoDriver = {
   render(projectPath, outPath, opts): AsyncIterable<RenderEvent> {
     const { push, end, stream } = makeEventStream<RenderEvent>();
 
+    if (opts?.signal?.aborted) {
+      push({ type: "error", message: "Aborted" });
+      end();
+      return stream;
+    }
+
     const proc = spawn(
       "pnpm",
       ["exec", "hyperframes", "render", "--out", outPath],

@@ -60,6 +60,15 @@ export const remotionDriver: VideoDriver = {
   render(projectPath, outPath, opts): AsyncIterable<RenderEvent> {
     const { push, end, stream } = makeEventStream<RenderEvent>();
 
+    // Already-aborted signals must not spawn. Return a stream that
+    // immediately yields an error + end, matching the pattern emitted by
+    // the abort handler for mid-render cancellation.
+    if (opts?.signal?.aborted) {
+      push({ type: "error", message: "Aborted" });
+      end();
+      return stream;
+    }
+
     // Remotion v4's CLI signature is `remotion render <entry> <composition>
     // <out>`. Pass the entry explicitly (`src/index.ts` matches our
     // template scaffold) so the command doesn't depend on Remotion's
