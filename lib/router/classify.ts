@@ -183,7 +183,11 @@ export const routerOutputSchema = z.object({
   library: librarySchema,
   paradigm: paradigmSchema,
   confidence: z.number().min(0).max(1),
-  rationale: z.string().min(1).max(500),
+  // Some models (observed on Llama 4 Scout) intermittently omit
+  // `rationale` even though the system prompt requests it. Default to
+  // empty so the classification still succeeds; the UI simply renders
+  // nothing for the rationale block in that case.
+  rationale: z.string().max(500).optional().default(""),
   spec: z.object({
     durationSec: z.number().min(1).max(3600),
     fps: z.number().min(1).max(120),
