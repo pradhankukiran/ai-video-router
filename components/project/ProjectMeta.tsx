@@ -9,28 +9,28 @@ export function ProjectMeta({ project }: { project: ProjectRow }) {
   return (
     <div className="flex flex-col text-sm">
       <section className="border-b border-border px-3 py-3">
-        <Label>library</Label>
-        <p className="mt-1 text-text-primary">{project.library}</p>
+        <Label index={1}>library</Label>
+        <p className="mt-1 font-mono text-text-primary">{project.library}</p>
         <p className="mt-0.5 text-xs text-text-tertiary">{project.paradigm}</p>
       </section>
 
       <section className="border-b border-border px-3 py-3">
-        <Label>title</Label>
-        <p className="mt-1 whitespace-pre-wrap text-text-primary">
+        <Label index={2}>title</Label>
+        <p className="mt-1 whitespace-pre-wrap font-sans text-text-primary">
           {project.title}
         </p>
       </section>
 
       <section className="border-b border-border px-3 py-3">
-        <Label>prompt</Label>
-        <p className="mt-1 whitespace-pre-wrap text-text-secondary">
+        <Label index={3}>prompt</Label>
+        <p className="mt-1 whitespace-pre-wrap font-sans text-text-secondary">
           {project.prompt}
         </p>
       </section>
 
       <section className="border-b border-border px-3 py-3">
         <div className="flex items-center justify-between gap-2">
-          <Label>project path</Label>
+          <Label index={4}>project path</Label>
           <CopyButton text={project.path} />
         </div>
         <p className="mt-1 break-all font-mono text-xs text-text-secondary">
@@ -40,7 +40,7 @@ export function ProjectMeta({ project }: { project: ProjectRow }) {
 
       <section className="px-3 py-3">
         <div className="flex items-center justify-between gap-2">
-          <Label>session</Label>
+          <Label index={5}>session</Label>
           {project.session_id && <CopyButton text={project.session_id} />}
         </div>
         <p className="mt-1 break-all font-mono text-xs text-text-secondary">
