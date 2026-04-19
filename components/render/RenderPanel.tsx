@@ -126,7 +126,14 @@ export function RenderPanel({ projectId }: { projectId: string }) {
             </div>
           )}
           {progress.totalFrames > 0 && (
-            <div className="h-1.5 w-full bg-surface-subtle">
+            <div
+              role="progressbar"
+              aria-valuenow={progress.frame}
+              aria-valuemin={0}
+              aria-valuemax={progress.totalFrames}
+              aria-label="Render progress"
+              className="h-1.5 w-full bg-surface-subtle"
+            >
               <div
                 className="h-1.5 bg-accent"
                 style={{
