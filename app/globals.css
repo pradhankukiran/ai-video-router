@@ -1,19 +1,22 @@
 @import "tailwindcss";
 
-/* ai-video-router: professional enterprise palette, white-first. */
+/* ai-video-router: Terminal Paper — cream background, sepia accent,
+ * mono-first typography, rule-driven layout. Think well-typeset Unix man
+ * page. All tokens remapped; components pick them up via the semantic
+ * aliases below, so no component-level class renames are needed. */
 @theme {
-  /* -- Color tokens (raw palette) ---------------------------------- */
-  --color-ink: #0f172a;
-  --color-ink-muted: #475569;
-  --color-ink-faint: #64748b;
-  --color-line: #e2e8f0;
-  --color-line-strong: #cbd5e1;
-  --color-surface: #ffffff;
-  --color-surface-subtle: #f8fafc;
-  --color-accent: #1d4ed8;
-  --color-accent-ink: #ffffff;
-  --color-danger: #b91c1c;
-  --color-success: #15803d;
+  /* -- Color tokens (Terminal Paper palette) ----------------------- */
+  --color-ink: #1a1815;
+  --color-ink-muted: #4c4740;
+  --color-ink-faint: #6b6558;
+  --color-line: #d4d0c8;
+  --color-line-strong: #b8b0a0;
+  --color-surface: #f8f5ee;
+  --color-surface-subtle: #f1ecdf;
+  --color-accent: #a0522d;
+  --color-accent-ink: #f8f5ee;
+  --color-danger: #8b2e1f;
+  --color-success: #4a5d23;
 
   /* -- Semantic color aliases (used by primitives; retintable in one place) */
   --color-text-primary: var(--color-ink);
