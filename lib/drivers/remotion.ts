@@ -1,14 +1,11 @@
-import { spawn } from "node:child_process";
 import path from "node:path";
 import {
-  buildChildEnv,
   findFreePort,
-  killTree,
-  makeEventStream,
   runToCompletion,
-  waitForReady,
+  spawnPreview,
+  spawnRender,
 } from "./_process";
-import type { PreviewHandle, RenderEvent, VideoDriver } from "./types";
+import type { VideoDriver } from "./types";
 
 const TEMPLATE_DIR = path.join(process.cwd(), "templates", "remotion");
 
@@ -23,13 +20,11 @@ export const remotionDriver: VideoDriver = {
     await runToCompletion("pnpm", ["install"], { cwd: projectPath });
   },
 
-  async startPreview(projectPath): Promise<PreviewHandle> {
+  async startPreview(projectPath) {
     const port = await findFreePort();
-    // Explicit --host 127.0.0.1 so the studio never binds 0.0.0.0 on
-    // Remotion versions that default to all-interfaces.
-    const proc = spawn(
-      "pnpm",
-      [
+    return spawnPreview({
+      cmd: "pnpm",
+      args: [
         "exec",
         "remotion",
         "studio",
@@ -38,101 +33,27 @@ export const remotionDriver: VideoDriver = {
         "--port",
         String(port),
       ],
-      {
-        cwd: projectPath,
-        stdio: ["ignore", "pipe", "pipe"],
-        detached: true,
-        env: buildChildEnv(),
-      },
-    );
-
-    try {
-      // Remotion Studio prints a concrete "Server ready" / "Studio is
-      // running on" line once it's listening. The previous pattern matched
-      // any line containing "localhost:", which false-positives on
-      // deprecation warnings and dependency URLs.
-      await waitForReady(proc, (text) =>
-        /Server ready|Studio is running on/i.test(text),
-      );
-    } catch (err) {
-      await killTree(proc);
-      throw err;
-    }
-
-    return {
+      cwd: projectPath,
       url: `http://localhost:${port}`,
-      kill: async () => {
-        await killTree(proc);
-      },
-    };
+      // Remotion Studio prints a concrete "Server ready" / "Studio is running
+      // on" line once it's listening. Avoid matching incidental "localhost:"
+      // mentions in deprecation warnings or dependency URLs.
+      readyRe: /Server ready|Studio is running on/i,
+    });
   },
 
-  render(projectPath, outPath, opts): AsyncIterable<RenderEvent> {
-    const { push, end, stream } = makeEventStream<RenderEvent>();
-
-    // Already-aborted signals must not spawn. Return a stream that
-    // immediately yields an error + end, matching the pattern emitted by
-    // the abort handler for mid-render cancellation.
-    if (opts?.signal?.aborted) {
-      push({ type: "error", message: "Aborted" });
-      end();
-      return stream;
-    }
-
-    // Remotion v4's CLI signature is `remotion render <entry> <composition>
-    // <out>`. Pass the entry explicitly (`src/index.ts` matches our
-    // template scaffold) so the command doesn't depend on Remotion's
-    // default-entry discovery.
-    const proc = spawn(
-      "pnpm",
-      ["exec", "remotion", "render", "src/index.ts", "Main", outPath],
-      {
-        cwd: projectPath,
-        stdio: ["ignore", "pipe", "pipe"],
-        detached: true,
-        env: buildChildEnv(),
-      },
-    );
-
-    const onData = (chunk: Buffer) => {
-      const text = chunk.toString();
-      push({ type: "log", line: text });
-      const m = /Rendering\s+\((\d+)\/(\d+)\)/i.exec(text);
-      if (m?.[1] && m[2]) {
-        push({
-          type: "progress",
-          frame: Number(m[1]),
-          totalFrames: Number(m[2]),
-        });
-      }
-    };
-
-    proc.stdout?.on("data", onData);
-    proc.stderr?.on("data", onData);
-
-    const onAbort = () => {
-      void killTree(proc);
-    };
-    opts?.signal?.addEventListener("abort", onAbort, { once: true });
-
-    proc.on("error", (err) => {
-      push({ type: "error", message: err.message });
-      end();
+  render(projectPath, outPath, opts) {
+    // Remotion v4 CLI signature: `remotion render <entry> <composition> <out>`.
+    // Pass the entry explicitly (matches the template scaffold) so we don't
+    // depend on Remotion's default-entry discovery.
+    return spawnRender({
+      cmd: "pnpm",
+      args: ["exec", "remotion", "render", "src/index.ts", "Main", outPath],
+      cwd: projectPath,
+      outPath,
+      errorLabel: "remotion render",
+      progressRe: /Rendering\s+\((\d+)\/(\d+)\)/i,
+      signal: opts?.signal,
     });
-
-    proc.on("exit", (code) => {
-      opts?.signal?.removeEventListener("abort", onAbort);
-      if (opts?.signal?.aborted) {
-        push({ type: "error", message: "Aborted" });
-      } else if (code === 0) push({ type: "done", outPath });
-      else
-        push({
-          type: "error",
-          message: `remotion render exited with code ${code}`,
-        });
-      end();
-    });
-
-    return stream;
   },
 };
