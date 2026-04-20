@@ -128,7 +128,7 @@ export function PromptForm() {
             onChange={(e) => setPrompt(e.target.value)}
             rows={5}
             disabled={phase !== "idle"}
-            className="w-full resize-y border border-border bg-bg px-2 py-1.5 text-sm text-text-primary focus:border-action disabled:opacity-60"
+            className="w-full resize-y border-2 border-ink bg-surface px-3 py-2 text-sm text-ink focus:border-[color:var(--color-vermilion)] disabled:opacity-60"
             placeholder="30s product explainer, corporate tone, kinetic title, neutral palette…"
           />
         </Panel.Body>
@@ -155,7 +155,7 @@ export function PromptForm() {
       )}
 
       {error && (
-        <div className="border-t border-border p-3">
+        <div className="border-t-2 border-ink p-3">
           <Alert variant="danger" onDismiss={() => setError(null)}>
             {error}
           </Alert>
@@ -177,8 +177,8 @@ function ClassificationPreview({
   submitting: boolean;
 }) {
   return (
-    <div className="border-t border-border bg-bg-subtle">
-      <div className="flex items-center justify-between border-b border-border px-3 py-2">
+    <div className="border-t-2 border-ink bg-bg-subtle">
+      <div className="flex items-center justify-between border-b-2 border-ink px-3 py-2">
         <Label>classification</Label>
         <span className="flex items-center gap-2">
           <Badge tone="accent">{classification.library}</Badge>
@@ -224,7 +224,7 @@ function ClassificationPreview({
           </dl>
         </TabsContent>
       </Tabs>
-      <div className="flex items-center justify-end gap-2 border-t border-border px-3 py-2">
+      <div className="flex items-center justify-end gap-2 border-t-2 border-ink px-3 py-2">
         <Button onClick={onCancel} disabled={submitting}>
           Re-route
         </Button>

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { getDb } from "../db";
 import type { LibraryKey, Paradigm } from "../drivers/types";
 
@@ -62,6 +63,24 @@ export function listProjects(): ProjectRow[] {
       `SELECT * FROM projects ORDER BY updated_at DESC`,
     )
     .all();
+}
+
+/**
+ * True when the project has a completed render AND the ffmpeg thumbnail
+ * JPEG was actually written alongside it. Used by the landing grid so
+ * SSR can render the designed poster placeholder immediately instead of
+ * waiting on a client-side `<img onError>` handler.
+ */
+export function hasProjectThumbnail(projectId: string): boolean {
+  const latest = getDb()
+    .prepare<[string], { out_path: string | null }>(
+      `SELECT out_path FROM renders
+       WHERE project_id = ? AND status = 'done' AND out_path IS NOT NULL
+       ORDER BY started_at DESC LIMIT 1`,
+    )
+    .get(projectId);
+  if (!latest?.out_path) return false;
+  return existsSync(`${latest.out_path}.jpg`);
 }
 
 export function setProjectSessionId(id: string, sessionId: string): void {

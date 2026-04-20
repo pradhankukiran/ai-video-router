@@ -3,13 +3,18 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
+import { PlayMark } from "@/components/ui/PlayMark";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { projectHref } from "@/components/routes";
 import type { ProjectRow } from "@/lib/queries/projects";
 import { cn } from "@/lib/cn";
 
+interface ProjectRowWithThumb extends ProjectRow {
+  hasThumbnail?: boolean;
+}
+
 interface ProjectGridProps {
-  projects: ProjectRow[];
+  projects: ProjectRowWithThumb[];
 }
 
 /**
@@ -30,24 +35,32 @@ export function ProjectGrid({ projects }: ProjectGridProps) {
   );
 }
 
-function ProjectCard({ project }: { project: ProjectRow }) {
-  const [thumbFailed, setThumbFailed] = useState(false);
+function ProjectCard({ project }: { project: ProjectRowWithThumb }) {
+  // SSR-aware: if the server already knows there's no thumbnail on disk,
+  // start in "failed" state so the designed Placeholder renders in the
+  // first paint instead of flashing a broken <img>.
+  const [thumbFailed, setThumbFailed] = useState(
+    project.hasThumbnail === false,
+  );
   const href = projectHref(project.id);
   const updated = new Date(project.updated_at);
 
   return (
     <Link
       href={href}
-      className="group flex flex-col border border-border bg-bg transition-colors hover:bg-bg-subtle"
+      className="group flex flex-col border-2 border-ink bg-surface transition-colors hover:bg-surface-subtle"
       style={{ transitionDuration: "var(--dur-fast, 120ms)" }}
     >
       <div
         className={cn(
-          "relative aspect-video w-full overflow-hidden border-b border-border bg-bg-subtle",
+          "relative aspect-video w-full overflow-hidden border-b-2 border-ink bg-surface-subtle",
         )}
       >
         {thumbFailed ? (
-          <Placeholder library={project.library} />
+          <Placeholder
+            library={project.library}
+            paradigm={project.paradigm}
+          />
         ) : (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
@@ -82,14 +95,66 @@ function ProjectCard({ project }: { project: ProjectRow }) {
   );
 }
 
-function Placeholder({ library }: { library: string }) {
-  const initial = library[0]?.toUpperCase() ?? "?";
+/**
+ * Swiss-poster designed card used when a project has no rendered
+ * thumbnail yet. A big vermilion circle anchors the upper-right;
+ * library name + paradigm sit bottom-left in Inter Black.
+ */
+function Placeholder({
+  library,
+  paradigm,
+}: {
+  library: string;
+  paradigm: string;
+}) {
+  const libName = library.toUpperCase();
+  // Shrink font size for long library names so they fit within the
+  // 400-wide viewBox with a 20px left margin.
+  const libFontSize =
+    libName.length > 12 ? 28 : libName.length > 9 ? 34 : 42;
   return (
-    <div className="flex h-full w-full items-center justify-center bg-bg-subtle">
-      <span className="font-mono text-display text-text-tertiary">
-        {initial}
-      </span>
-    </div>
+    <svg
+      viewBox="0 0 400 225"
+      preserveAspectRatio="xMidYMid slice"
+      className="h-full w-full"
+      aria-hidden="true"
+    >
+      <rect width="400" height="225" fill="#ffffff" />
+      {/* Nested play-button mark anchored top-right, partially cropped. */}
+      <PlayMark cx={360} cy={55} r={78} />
+      <g
+        fill="#000000"
+        style={{ fontFamily: "var(--font-sans)" }}
+      >
+        <text
+          x="20"
+          y="32"
+          fontSize="10"
+          fontWeight="700"
+          letterSpacing="1.5"
+        >
+          LIBRARY
+        </text>
+        <text
+          x="20"
+          y="178"
+          fontSize={libFontSize}
+          fontWeight="900"
+          letterSpacing="-0.5"
+        >
+          {libName}
+        </text>
+        <text
+          x="20"
+          y="202"
+          fontSize="11"
+          fontWeight="600"
+          letterSpacing="1.5"
+        >
+          {paradigm.toUpperCase()}
+        </text>
+      </g>
+    </svg>
   );
 }
 

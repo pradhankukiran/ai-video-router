@@ -63,7 +63,7 @@ export function LibraryReferencePanel() {
           {ROWS.length}
         </span>
       </Panel.Header>
-      <ul className="divide-y divide-border">
+      <ul className="divide-y-2 divide-ink">
         {ROWS.map((row) => (
           <li
             key={row.key}
@@ -71,7 +71,7 @@ export function LibraryReferencePanel() {
           >
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-sm text-text-primary">
+                <span className="text-sm font-bold uppercase tracking-[0.02em] text-ink">
                   {LIBRARY_LABEL[row.key]}
                 </span>
                 <Badge tone="neutral">{row.paradigm}</Badge>
