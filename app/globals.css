@@ -1,37 +1,42 @@
 @import "tailwindcss";
 
-/* ai-video-router: Terminal Paper — cream background, sepia accent,
- * mono-first typography, rule-driven layout. Think well-typeset Unix man
- * page. All tokens remapped; components pick them up via the semantic
- * aliases below, so no component-level class renames are needed. */
+/* ai-video-router: Swiss Poster — white ground, true black rules,
+ * single saturated red. Inspired by Müller-Brockmann (Musica Viva),
+ * Emil Ruder, Hans Neuburg, Armin Hofmann. Big display type, 2px ink
+ * rules, solid colour blocks, numbered modules, geometric shapes
+ * as information. No greys in chrome — structure is black or red
+ * or white, nothing in between. */
 @theme {
-  /* -- Color tokens (Terminal Paper palette) ----------------------- */
-  --color-ink: #1a1815;
-  --color-ink-muted: #4c4740;
-  --color-ink-faint: #6b6558;
-  --color-line: #d4d0c8;
-  --color-line-strong: #b8b0a0;
-  --color-surface: #f8f5ee;
-  --color-surface-subtle: #f1ecdf;
-  --color-accent: #a0522d;
-  --color-accent-ink: #f8f5ee;
-  --color-danger: #8b2e1f;
-  --color-success: #4a5d23;
+  /* -- Color tokens ------------------------------------------------ */
+  --color-ink: #000000;
+  --color-ink-muted: #000000;
+  --color-ink-faint: #000000;
+  --color-line-soft: #e5e5e5;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f5f5f4;
 
-  /* -- Semantic color aliases (used by primitives; retintable in one place) */
+  --color-vermilion: #d92f2a;
+
+  --color-accent: var(--color-vermilion);
+  --color-accent-ink: #ffffff;
+  --color-danger: var(--color-vermilion);
+  --color-success: var(--color-ink);
+
+  /* -- Semantic aliases ------------------------------------------- */
   --color-text-primary: var(--color-ink);
-  --color-text-secondary: var(--color-ink-muted);
-  --color-text-tertiary: var(--color-ink-faint);
-  --color-border: var(--color-line);
-  --color-border-strong: var(--color-line-strong);
+  --color-text-secondary: var(--color-ink);
+  --color-text-tertiary: var(--color-ink);
+  --color-border: var(--color-ink);
+  --color-border-strong: var(--color-ink);
+  --color-border-soft: var(--color-line-soft);
   --color-bg: var(--color-surface);
   --color-bg-subtle: var(--color-surface-subtle);
   --color-action: var(--color-accent);
   --color-action-ink: var(--color-accent-ink);
 
-  /* -- Typography scale -------------------------------------------- */
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
-    Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  /* -- Typography ------------------------------------------------- */
+  --font-sans: var(--font-inter), ui-sans-serif, "Helvetica Neue", Helvetica,
+    Arial, system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
     Consolas, monospace;
 
@@ -41,27 +46,33 @@
   --text-xs--line-height: 16px;
   --text-sm: 13px;
   --text-sm--line-height: 18px;
-  --text-base: 14px;
-  --text-base--line-height: 20px;
-  --text-lg: 16px;
-  --text-lg--line-height: 22px;
-  --text-display: 24px;
-  --text-display--line-height: 30px;
+  --text-base: 15px;
+  --text-base--line-height: 22px;
+  --text-lg: 18px;
+  --text-lg--line-height: 24px;
+  --text-display: 28px;
+  --text-display--line-height: 32px;
+  --text-module: 56px;
+  --text-module--line-height: 0.95;
+  --text-poster: 120px;
+  --text-poster--line-height: 0.88;
+  --text-slab: 200px;
+  --text-slab--line-height: 0.82;
 
-  /* -- Radii (kept tight for enterprise-sharp aesthetic) ----------- */
-  --radius-xs: 2px;
-  --radius-sm: 3px;
-  --radius-md: 4px;
+  /* -- Radii (flat) ----------------------------------------------- */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
 
-  /* -- Motion ------------------------------------------------------ */
+  /* -- Motion ----------------------------------------------------- */
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --dur-fast: 120ms;
-  --dur-base: 180ms;
-  --dur-slow: 240ms;
+  --dur-fast: 100ms;
+  --dur-base: 140ms;
+  --dur-slow: 200ms;
 
-  /* -- Z-index scale (pinned so overlays / tooltips don't fight) --- */
+  /* -- Z-index ---------------------------------------------------- */
   --z-base: 0;
   --z-raised: 10;
   --z-sticky: 100;
@@ -75,15 +86,14 @@ html,
 body {
   background: var(--color-bg);
   color: var(--color-text-primary);
-  /* Terminal Paper: mono is the UI font of record. Prose text blocks
-   * explicitly opt into font-sans; everything else (labels, buttons,
-   * chrome, status indicators) stays mono. */
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Enterprise defaults: sharp corners, thin borders, no shadows/gradients. */
+/* Poster default: 1px ink for rules; heavy 2px ink for structure is
+ * opted in explicitly via `border-2 border-ink`. Soft grey exists
+ * only as `border-border-soft` for rare lightweight dividers. */
 * {
   border-color: var(--color-border);
 }
@@ -92,7 +102,7 @@ button,
 input,
 textarea,
 select {
-  border-radius: var(--radius-sm);
+  border-radius: 0;
   font-family: inherit;
 }
 
@@ -107,16 +117,20 @@ samp {
   font-family: var(--font-mono);
 }
 
-/* Accessible focus rings: hidden for mouse users, visible for keyboard. */
+/* 3px solid red focus ring — the single accent as a loud safety signal. */
 *:focus {
   outline: none;
 }
 *:focus-visible {
-  outline: 2px solid var(--color-action);
-  outline-offset: 1px;
+  outline: 3px solid var(--color-vermilion);
+  outline-offset: 0;
 }
 
-/* Shimmer keyframes for Skeleton primitive. */
+::selection {
+  background: var(--color-vermilion);
+  color: var(--color-surface);
+}
+
 @keyframes avr-shimmer {
   from {
     background-position: -200% 0;
@@ -126,9 +140,65 @@ samp {
   }
 }
 
-/* Spin keyframes for Spinner primitive. */
 @keyframes avr-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Soft bounce-in for modals. Position is handled by a grid wrapper
+ * (grid place-items-center), so the keyframes only drive scale + opacity
+ * and don't fight the centering translate. */
+@keyframes avr-modal-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes avr-modal-exit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+@keyframes avr-overlay-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes avr-overlay-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
