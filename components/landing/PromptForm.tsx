@@ -19,6 +19,14 @@ import {
 
 type Phase = "idle" | "classifying" | "scaffolding";
 
+const EXAMPLE_PROMPTS = [
+  "30 second product explainer for our new invoice automation tool, corporate tone, kinetic title, flat white background",
+  "45 second marketing video with an avatar speaking directly to camera about our new SaaS launch",
+  "Educational animation explaining how HTTP/3 handshakes work, packets moving across a diagram",
+  "60 second photo slideshow with crossfade transitions and background music",
+  "Particle explosion animation with thousands of shards forming our logo",
+];
+
 interface Classification {
   title: string;
   library: string;
@@ -131,6 +139,36 @@ export function PromptForm() {
             className="w-full resize-y border-2 border-ink bg-surface px-3 py-2 text-sm text-ink focus:border-[color:var(--color-vermilion)] disabled:opacity-60"
             placeholder="30s product explainer, corporate tone, kinetic title, neutral palette…"
           />
+          <div className="mt-6">
+            <Label>Try</Label>
+            <ul className="mt-2 divide-y divide-border-soft border-y border-border-soft">
+              {EXAMPLE_PROMPTS.map((ex, i) => (
+                <li key={i}>
+                  <button
+                    type="button"
+                    onClick={() => setPrompt(ex)}
+                    disabled={phase !== "idle"}
+                    className="group flex w-full items-start gap-3 py-2.5 text-left text-xs text-ink transition-colors hover:text-[color:var(--color-vermilion)] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="mt-[1px] shrink-0 font-bold text-[color:var(--color-vermilion)] opacity-60 group-hover:opacity-100"
+                      style={{ fontVariantNumeric: "tabular-nums" }}
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="flex-1">{ex}</span>
+                    <span
+                      aria-hidden="true"
+                      className="shrink-0 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      ↵
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </Panel.Body>
         {!classification && (
           <Panel.Footer>
