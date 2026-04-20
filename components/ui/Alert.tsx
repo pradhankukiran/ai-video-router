@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { cn } from "@/lib/cn";
 
 type AlertVariant = "danger" | "info" | "success";
 
@@ -11,17 +12,22 @@ interface AlertProps {
 }
 
 const LABELS: Record<AlertVariant, string> = {
-  danger: "error",
-  info: "info",
-  success: "success",
+  danger: "Error",
+  info: "Info",
+  success: "Done",
 };
 
-const VARIANT_CLASSES: Record<AlertVariant, string> = {
+const BORDER_CLASS: Record<AlertVariant, string> = {
+  danger: "border-[color:var(--color-vermilion)]",
+  info: "border-ink",
+  success: "border-ink",
+};
+
+const LABEL_CLASS: Record<AlertVariant, string> = {
   danger:
-    "border-danger/40 bg-[color:var(--color-danger)]/5 text-danger",
-  info: "border-line bg-surface-subtle text-ink-muted",
-  success:
-    "border-success/40 bg-[color:var(--color-success)]/5 text-success",
+    "bg-[color:var(--color-vermilion)] text-[color:var(--color-accent-ink)]",
+  info: "bg-ink text-[color:var(--color-accent-ink)]",
+  success: "bg-ink text-[color:var(--color-accent-ink)]",
 };
 
 export function Alert({ variant, children, onDismiss }: AlertProps) {
@@ -31,22 +37,30 @@ export function Alert({ variant, children, onDismiss }: AlertProps) {
     <div
       role={role}
       aria-live={live}
-      className={`flex items-start gap-2 border px-3 py-2 text-xs ${VARIANT_CLASSES[variant]}`}
+      className={cn(
+        "flex items-stretch border-2 bg-surface text-xs",
+        BORDER_CLASS[variant],
+      )}
     >
-      <div className="min-w-0 flex-1">
-        <p className="mb-1 text-[10px] uppercase tracking-wider">
-          {LABELS[variant]}
-        </p>
-        <div className="whitespace-pre-wrap text-sm">{children}</div>
+      <span
+        className={cn(
+          "flex items-center px-2 text-[10px] uppercase font-bold tracking-[0.1em]",
+          LABEL_CLASS[variant],
+        )}
+      >
+        {LABELS[variant]}
+      </span>
+      <div className="min-w-0 flex-1 whitespace-pre-wrap px-3 py-2 text-sm text-ink">
+        {children}
       </div>
       {onDismiss ? (
         <button
           type="button"
           onClick={onDismiss}
           aria-label={`Dismiss ${LABELS[variant]}`}
-          className="shrink-0 border border-current px-1 py-0 text-[10px] uppercase tracking-wider opacity-70 hover:opacity-100 focus-visible:opacity-100"
+          className="shrink-0 border-l-2 border-ink px-2 text-[10px] uppercase font-bold tracking-[0.1em] text-ink hover:bg-ink hover:text-[color:var(--color-accent-ink)]"
         >
-          dismiss
+          Dismiss
         </button>
       ) : null}
     </div>

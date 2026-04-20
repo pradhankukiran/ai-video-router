@@ -9,18 +9,12 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const TONE_CLASS: Record<BadgeTone, string> = {
-  neutral: "border-border text-text-secondary bg-bg",
-  accent: "border-action text-action bg-bg",
-  danger: "border-[color:var(--color-danger)]/40 text-[color:var(--color-danger)] bg-bg",
-  success:
-    "border-[color:var(--color-success)]/40 text-[color:var(--color-success)] bg-bg",
-};
-
-const DOT_CLASS: Record<BadgeTone, string> = {
-  neutral: "bg-text-tertiary",
-  accent: "bg-action",
-  danger: "bg-[color:var(--color-danger)]",
-  success: "bg-[color:var(--color-success)]",
+  neutral: "bg-ink text-[color:var(--color-accent-ink)]",
+  accent:
+    "bg-[color:var(--color-vermilion)] text-[color:var(--color-accent-ink)]",
+  danger:
+    "bg-[color:var(--color-vermilion)] text-[color:var(--color-accent-ink)]",
+  success: "bg-ink text-[color:var(--color-accent-ink)]",
 };
 
 export function Badge({
@@ -34,7 +28,7 @@ export function Badge({
     <span
       {...rest}
       className={cn(
-        "inline-flex items-center gap-1.5 border px-1.5 py-0.5 text-xs",
+        "inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase font-bold tracking-[0.1em] leading-none",
         TONE_CLASS[tone],
         className,
       )}
@@ -42,13 +36,10 @@ export function Badge({
       {dot && (
         <span
           aria-hidden="true"
-          className={cn(
-            "inline-block h-[6px] w-[6px] rounded-full",
-            DOT_CLASS[tone],
-          )}
+          className="inline-block h-[6px] w-[6px] rounded-full bg-current"
         />
       )}
-      <span className="font-mono leading-none">{children}</span>
+      <span className="leading-none">{children}</span>
     </span>
   );
 }

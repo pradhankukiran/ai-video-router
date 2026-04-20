@@ -1,13 +1,8 @@
 import { cn } from "@/lib/cn";
 
 interface LabelProps extends React.HTMLAttributes<HTMLSpanElement> {
-  /** When true, reduce tracking slightly for tighter inline labels. */
   tight?: boolean;
-  /**
-   * Optional zero-padded index rendered as a monospaced gutter before the
-   * label text (e.g. `01 library`). Signature element of the Terminal
-   * Paper direction.
-   */
+  /** Optional zero-padded index rendered as a bold tabular ink numeral. */
   index?: number;
 }
 
@@ -15,10 +10,6 @@ function pad(n: number): string {
   return n.toString().padStart(2, "0");
 }
 
-/**
- * The uppercase micro label pattern used throughout the app for section
- * kickers, column headers, and meta field names.
- */
 export function Label({
   className,
   tight = false,
@@ -30,17 +21,20 @@ export function Label({
     <span
       {...rest}
       className={cn(
-        "text-micro uppercase text-text-tertiary",
-        tight ? "tracking-wide" : "tracking-wider",
+        "inline-flex items-baseline gap-2 text-[11px] uppercase font-semibold text-ink",
+        tight ? "tracking-[0.05em]" : "tracking-[0.1em]",
         className,
       )}
     >
       {typeof index === "number" && (
-        <span className="mr-2 text-text-tertiary/60 normal-case tracking-normal">
+        <span
+          className="text-[13px] font-bold normal-case tracking-normal text-ink"
+          style={{ fontVariantNumeric: "tabular-nums" }}
+        >
           {pad(index)}
         </span>
       )}
-      {children}
+      <span>{children}</span>
     </span>
   );
 }

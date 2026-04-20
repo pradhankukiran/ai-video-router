@@ -10,21 +10,21 @@ interface StatusDotProps {
 }
 
 const TONE_CLASS: Record<StatusTone, string> = {
-  neutral: "bg-text-tertiary",
-  accent: "bg-action",
-  success: "bg-[color:var(--color-success)]",
-  danger: "bg-[color:var(--color-danger)]",
-  idle: "bg-[color:var(--color-line-strong)]",
+  neutral: "bg-ink",
+  accent: "bg-[color:var(--color-vermilion)]",
+  success: "bg-ink",
+  danger: "bg-[color:var(--color-vermilion)]",
+  idle: "bg-[color:var(--color-line-soft)]",
 };
 
 /**
- * Small colored indicator dot for preview-running, render-in-progress,
- * stream-live, etc. Optional pulse animation uses CSS `var(--dur-slow)`.
+ * Solid filled circle. Bigger default (10px) so it reads as a
+ * compositional dot, not a hairline marker.
  */
 export function StatusDot({
   tone = "neutral",
   pulse = false,
-  size = 6,
+  size = 10,
   className,
 }: StatusDotProps) {
   return (
@@ -39,7 +39,7 @@ export function StatusDot({
       style={{
         width: `${size}px`,
         height: `${size}px`,
-        animationDuration: pulse ? "var(--dur-slow, 240ms)" : undefined,
+        animationDuration: pulse ? "var(--dur-slow, 200ms)" : undefined,
       }}
     />
   );

@@ -9,18 +9,17 @@ interface AsciiStatusProps {
 }
 
 const TONE_CLASS: Record<Tone, string> = {
-  neutral: "text-text-secondary",
-  accent: "text-[color:var(--color-accent)]",
-  success: "text-[color:var(--color-success)]",
-  danger: "text-[color:var(--color-danger)]",
-  idle: "text-text-tertiary",
+  neutral: "bg-ink text-[color:var(--color-accent-ink)]",
+  accent:
+    "bg-[color:var(--color-vermilion)] text-[color:var(--color-accent-ink)]",
+  success: "bg-ink text-[color:var(--color-accent-ink)]",
+  danger:
+    "bg-[color:var(--color-vermilion)] text-[color:var(--color-accent-ink)]",
+  idle: "bg-[color:var(--color-line-soft)] text-ink",
 };
 
 /**
- * Compact bracketed status tag rendered in monospace. Terminal Paper
- * signature element — replaces colored pill badges for status indicators.
- *
- *     [ok]   [running]   [!!]
+ * Solid colour-block status pill — Swiss poster signage.
  */
 export function AsciiStatus({
   tone = "neutral",
@@ -30,18 +29,12 @@ export function AsciiStatus({
   return (
     <span
       className={cn(
-        "inline-flex items-center font-mono text-micro leading-none",
+        "inline-flex items-center px-2 py-0.5 text-[10px] uppercase font-bold leading-none tracking-[0.1em]",
         TONE_CLASS[tone],
         className,
       )}
     >
-      <span aria-hidden="true" className="text-text-tertiary/60">
-        [
-      </span>
-      <span className="px-0.5">{children}</span>
-      <span aria-hidden="true" className="text-text-tertiary/60">
-        ]
-      </span>
+      {children}
     </span>
   );
 }
