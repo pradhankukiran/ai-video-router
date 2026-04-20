@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { parseSseStream } from "@/lib/sse";
 import { Alert } from "@/components/ui/Alert";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { Label } from "@/components/ui/Label";
 
 interface RenderRow {
   id: string;
@@ -166,10 +167,8 @@ export function RenderPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex flex-col text-sm">
-      <div className="flex items-center justify-between border-b border-line px-3 py-2">
-        <p className="text-[10px] uppercase tracking-wider text-ink-faint">
-          render
-        </p>
+      <div className="flex items-center justify-between border-b-2 border-ink px-3 py-2">
+        <Label>render</Label>
         {running ? (
           <Button onClick={cancel}>Cancel</Button>
         ) : (
@@ -180,7 +179,7 @@ export function RenderPanel({ projectId }: { projectId: string }) {
       </div>
 
       {progress && (
-        <div className="border-b border-line px-3 py-2 text-xs">
+        <div className="border-b-2 border-ink px-3 py-2 text-xs">
           {progress.totalFrames > 0 && (
             <div className="mb-1 flex items-center justify-between text-ink-muted">
               <span>
@@ -198,10 +197,10 @@ export function RenderPanel({ projectId }: { projectId: string }) {
               aria-valuemin={0}
               aria-valuemax={progress.totalFrames}
               aria-label="Render progress"
-              className="h-1.5 w-full bg-surface-subtle"
+              className="h-3 w-full border-2 border-ink bg-surface"
             >
               <div
-                className="h-1.5 bg-accent"
+                className="h-full bg-[color:var(--color-vermilion)]"
                 style={{
                   width: `${Math.min(100, (progress.frame / progress.totalFrames) * 100)}%`,
                 }}
@@ -248,7 +247,7 @@ export function RenderPanel({ projectId }: { projectId: string }) {
         </div>
       )}
 
-      <ul className="divide-y divide-line">
+      <ul className="divide-y-2 divide-ink">
         {renders.length === 0 ? (
           <li className="px-3 py-3 text-xs text-ink-faint">No renders yet.</li>
         ) : (

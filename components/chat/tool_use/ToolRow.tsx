@@ -10,24 +10,21 @@ interface ToolRowProps {
 }
 
 /**
- * Shared chrome for every tool-use row: a small monospace tool name tag on
- * the left, a summary line on the right (usually a filename or query), and
- * optional expanded body below.
+ * Shared chrome for every tool-use row: solid ink tool-name pill on
+ * the left, summary on the right, optional expanded body below.
  */
 export function ToolRow({ tool, summary, children, className }: ToolRowProps) {
   return (
-    <div className={cn("border border-border bg-bg text-xs", className)}>
-      <header className="flex items-center gap-2 px-2 py-1">
-        <span className="border border-border bg-bg-subtle px-1.5 py-0.5 font-mono text-micro uppercase tracking-wide text-text-secondary">
+    <div className={cn("border-2 border-ink bg-surface text-xs", className)}>
+      <header className="flex items-center gap-2 px-2 py-2">
+        <span className="inline-flex items-center bg-ink px-2 py-0.5 text-[10px] font-bold uppercase leading-none tracking-[0.1em] text-[color:var(--color-accent-ink)]">
           {tool}
         </span>
         {summary && (
-          <div className="min-w-0 flex-1 truncate text-text-primary">
-            {summary}
-          </div>
+          <div className="min-w-0 flex-1 truncate text-ink">{summary}</div>
         )}
       </header>
-      {children && <div className="border-t border-border">{children}</div>}
+      {children && <div className="border-t-2 border-ink">{children}</div>}
     </div>
   );
 }

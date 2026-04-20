@@ -23,8 +23,8 @@ export function EditRow({ block }: { block: ToolUseBlock }) {
             {filePath || "(no path)"}
           </span>
           {replaceAll && (
-            <span className="shrink-0 border border-border bg-bg-subtle px-1 font-mono text-micro uppercase text-text-tertiary">
-              replace-all
+            <span className="shrink-0 bg-[color:var(--color-vermilion)] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--color-accent-ink)]">
+              Replace all
             </span>
           )}
         </span>

@@ -37,6 +37,7 @@ const newId = () => `e${++nextLocalId}`;
 export function ChatPanel({
   projectId,
   initialPrompt,
+  initialEntries,
 }: {
   projectId: string;
   /**
@@ -47,8 +48,13 @@ export function ChatPanel({
    * project and should not have the prompt re-sent).
    */
   initialPrompt?: string | null;
+  /**
+   * Past turns hydrated from SQLite so a resumed workspace shows the
+   * full conversation instead of an empty scroll area.
+   */
+  initialEntries?: ChatEntry[];
 }) {
-  const [entries, setEntries] = useState<ChatEntry[]>([]);
+  const [entries, setEntries] = useState<ChatEntry[]>(initialEntries ?? []);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [hasNewBelow, setHasNewBelow] = useState(false);
@@ -201,11 +207,12 @@ export function ChatPanel({
           className="h-full space-y-2 overflow-y-auto px-4 py-3"
         >
           {entries.length === 0 ? (
-            <div className="py-8 text-center text-sm">
-              <p className="text-ink-muted">
-                Ask Claude Code to edit your project.
+            <div className="py-16 text-center">
+              <p className="text-xl font-bold leading-[1.1] text-ink">
+                Ask Claude Code<br />to edit your project
+                <span className="text-[color:var(--color-vermilion)]">.</span>
               </p>
-              <p className="mt-2 text-xs text-ink-faint">
+              <p className="mt-4 text-xs text-ink">
                 Try: &ldquo;Shorten the title to 60px and make the subtitle
                 italic.&rdquo;
               </p>
@@ -226,14 +233,14 @@ export function ChatPanel({
           <button
             type="button"
             onClick={scrollToBottom}
-            className="absolute bottom-3 right-3 border border-line bg-surface px-2 py-1 text-[11px] text-ink shadow-none hover:bg-surface-subtle"
+            className="absolute bottom-3 right-3 bg-[color:var(--color-vermilion)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--color-accent-ink)]"
           >
-            ↓ new activity
+            ↓ New activity
           </button>
         )}
       </div>
       <form
-        className="border-t border-line p-3"
+        className="border-t-2 border-ink p-3"
         onSubmit={(e) => {
           e.preventDefault();
           void send();
@@ -251,7 +258,7 @@ export function ChatPanel({
           }}
           placeholder="Describe the change…"
           rows={3}
-          className="w-full resize-none overflow-y-auto border border-line bg-surface px-2 py-1 text-sm focus:border-accent"
+          className="w-full resize-none overflow-y-auto border-2 border-ink bg-surface px-2 py-1.5 text-sm focus:border-[color:var(--color-vermilion)]"
         />
         <div className="mt-2 flex items-center justify-between text-xs text-ink-muted">
           <span>⌘/Ctrl + Enter to send</span>
@@ -277,24 +284,32 @@ function EntryRow({
 }) {
   if (entry.kind === "user-prompt") {
     return (
-      <div className="border-l-2 border-[color:var(--color-accent)] bg-bg-subtle px-3 py-2 text-sm">
-        <p className="mb-1 font-mono text-micro uppercase tracking-wider text-text-tertiary">
-          <span className="mr-2 text-text-tertiary/60 normal-case tracking-normal">
-            &gt;
-          </span>
-          you
-        </p>
-        <p className="whitespace-pre-wrap font-sans text-base text-text-primary">
-          {entry.text}
-        </p>
+      <div className="flex items-start gap-3 py-2">
+        <span
+          aria-hidden="true"
+          className="mt-1 inline-block bg-[color:var(--color-vermilion)] shrink-0"
+          style={{ width: "14px", height: "14px" }}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-vermilion)]">
+            You
+          </p>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-ink">
+            {entry.text}
+          </p>
+        </div>
       </div>
     );
   }
   if (entry.kind === "stream-end") {
     return (
-      <p className="py-1 text-center font-mono text-micro uppercase tracking-wider text-text-tertiary">
-        — turn complete —
-      </p>
+      <div aria-hidden className="flex items-center gap-3 py-3">
+        <span className="flex-1 border-t-2 border-ink" />
+        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-ink">
+          Turn complete
+        </span>
+        <span className="flex-1 border-t-2 border-ink" />
+      </div>
     );
   }
   if (entry.kind === "stream-error") {
@@ -317,15 +332,15 @@ function EntryRow({
 function SdkRow({ message }: { message: SDKMessage }) {
   if (message.type === "system") {
     return (
-      <p className="text-[10px] uppercase tracking-wider text-ink-faint">
-        system · {message.subtype}
+      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-ink">
+        System · {message.subtype}
       </p>
     );
   }
   if (message.type === "result") {
     return (
-      <p className="py-1 text-[10px] uppercase tracking-wider text-ink-faint">
-        result · {message.subtype}
+      <p className="py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-ink">
+        Result · {message.subtype}
       </p>
     );
   }
@@ -345,35 +360,39 @@ function AssistantRow({
 }) {
   const blocks = message.message.content;
   return (
-    <div className="border-l-2 border-border px-3 py-2 text-sm">
-      <p className="mb-1 font-mono text-micro uppercase tracking-wider text-text-tertiary">
-        <span className="mr-2 text-text-tertiary/60 normal-case tracking-normal">
-          &lt;
-        </span>
-        claude code
-      </p>
-      <div className="space-y-2">
-        {blocks.map((block, i) => {
-          if (block.type === "text") {
-            return (
-              <p
-                key={i}
-                className="whitespace-pre-wrap font-sans text-base text-text-primary"
-              >
-                {block.text}
-              </p>
-            );
-          }
-          if (block.type === "tool_use") {
-            return (
-              <ToolUseDispatch
-                key={i}
-                block={block as unknown as ToolUseBlock}
-              />
-            );
-          }
-          return null;
-        })}
+    <div className="flex items-start gap-3 py-2">
+      <span
+        aria-hidden="true"
+        className="mt-1 inline-block bg-ink shrink-0"
+        style={{ width: "14px", height: "14px" }}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-ink">
+          Claude Code
+        </p>
+        <div className="mt-1 space-y-2">
+          {blocks.map((block, i) => {
+            if (block.type === "text") {
+              return (
+                <p
+                  key={i}
+                  className="whitespace-pre-wrap text-sm text-ink"
+                >
+                  {block.text}
+                </p>
+              );
+            }
+            if (block.type === "tool_use") {
+              return (
+                <ToolUseDispatch
+                  key={i}
+                  block={block as unknown as ToolUseBlock}
+                />
+              );
+            }
+            return null;
+          })}
+        </div>
       </div>
     </div>
   );
@@ -395,13 +414,15 @@ function UserToolResultRow({
       {toolResults.map((r, i) => (
         <details
           key={i}
-          className="border border-line bg-surface-subtle px-2 py-1 text-xs"
+          className="border border-border-soft bg-surface-subtle px-2 py-1 text-xs"
         >
-          <summary className="cursor-pointer text-ink-muted">
-            tool_result
-            <span className="ml-2 text-ink-faint">{r.tool_use_id}</span>
+          <summary className="cursor-pointer text-[10px] uppercase tracking-[0.08em] font-medium text-ink-muted">
+            Tool result
+            <span className="ml-2 font-mono font-normal normal-case tracking-normal text-ink-faint">
+              {r.tool_use_id}
+            </span>
           </summary>
-          <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap text-[11px] text-ink-muted">
+          <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-ink-muted">
             {typeof r.content === "string"
               ? r.content
               : JSON.stringify(r.content, null, 2)}

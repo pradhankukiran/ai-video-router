@@ -72,7 +72,7 @@ export function ProjectActions({ projectId }: { projectId: string }) {
       : "";
 
   return (
-    <div className="border-t border-line px-3 py-3 text-xs">
+    <div className="border-t-2 border-ink px-3 py-3 text-xs">
       <Button
         variant="danger"
         onClick={onClick}

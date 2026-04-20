@@ -4,9 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { AsciiStatus } from "@/components/ui/AsciiStatus";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { Label } from "@/components/ui/Label";
 import { Spinner } from "@/components/ui/Spinner";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { CommandTrigger } from "@/components/command/CommandTrigger";
+import { PaneHeader } from "@/components/project/PaneHeader";
 
 type PreviewState =
   | { status: "idle" }
@@ -91,77 +92,73 @@ export function PreviewPane({ projectId }: { projectId: string }) {
     void refresh();
   }, [refresh]);
 
-  // Abort any in-flight fetch on unmount so a route change doesn't leak
-  // server-side handlers.
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
     };
   }, []);
 
+  const statusTone =
+    state.status === "running"
+      ? "success"
+      : state.status === "error"
+        ? "danger"
+        : state.status === "loading"
+          ? "accent"
+          : "idle";
+  const statusLabel =
+    state.status === "running"
+      ? "ok"
+      : state.status === "error"
+        ? "!!"
+        : state.status === "loading"
+          ? "…"
+          : "idle";
+
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
-        <div className="flex min-w-0 items-center gap-3 text-xs">
-          <Label index={2}>preview</Label>
-          <AsciiStatus
-            tone={
-              state.status === "running"
-                ? "success"
-                : state.status === "error"
-                  ? "danger"
-                  : state.status === "loading"
-                    ? "accent"
-                    : "idle"
-            }
-          >
-            {state.status === "running"
-              ? "ok"
-              : state.status === "error"
-                ? "!!"
-                : state.status === "loading"
-                  ? "…"
-                  : "idle"}
-          </AsciiStatus>
-          {state.status === "running" && (
-            <Tooltip content={state.url}>
-              <span className="max-w-[280px] truncate font-mono text-micro text-text-tertiary">
-                {state.url}
-              </span>
-            </Tooltip>
-          )}
-        </div>
-        <div className="ml-auto flex items-center gap-2 text-xs">
-          {state.status === "running" ? (
-            <>
-              <ButtonLink
-                href={state.url}
-                target="_blank"
-                rel="noreferrer"
+      <PaneHeader
+        index={2}
+        label="Preview"
+        action={
+          <>
+            {state.status === "running" ? (
+              <>
+                <ButtonLink href={state.url} target="_blank" rel="noreferrer">
+                  Open
+                </ButtonLink>
+                <Button onClick={() => void stop()}>Stop</Button>
+              </>
+            ) : (
+              <Button
+                variant="primary"
+                onClick={() => void start()}
+                disabled={state.status === "loading"}
               >
-                Open
-              </ButtonLink>
-              <Button onClick={() => void stop()}>Stop</Button>
-            </>
-          ) : (
-            <Button
-              variant="primary"
-              onClick={() => void start()}
-              disabled={state.status === "loading"}
-            >
-              {state.status === "loading" ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <Spinner size={10} label="Starting" />
-                  Starting…
-                </span>
-              ) : (
-                "Start preview"
-              )}
-            </Button>
-          )}
-        </div>
-      </header>
-      <div className="relative min-h-0 flex-1 bg-bg-subtle">
+                {state.status === "loading" ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Spinner size={10} label="Starting" />
+                    Starting…
+                  </span>
+                ) : (
+                  "Start preview"
+                )}
+              </Button>
+            )}
+            <CommandTrigger />
+          </>
+        }
+      >
+        <AsciiStatus tone={statusTone}>{statusLabel}</AsciiStatus>
+        {state.status === "running" && (
+          <Tooltip content={state.url}>
+            <span className="max-w-[320px] truncate font-mono text-[11px] text-ink">
+              {state.url}
+            </span>
+          </Tooltip>
+        )}
+      </PaneHeader>
+      <div className="relative min-h-0 flex-1 bg-surface-subtle">
         {state.status === "running" && (
           <iframe
             src={state.url}
@@ -176,12 +173,12 @@ export function PreviewPane({ projectId }: { projectId: string }) {
           </div>
         )}
         {state.status === "idle" && (
-          <p className="flex h-full items-center justify-center text-sm text-text-tertiary">
+          <p className="flex h-full items-center justify-center text-sm text-ink">
             Preview is not running.
           </p>
         )}
         {state.status === "loading" && (
-          <p className="flex h-full items-center justify-center gap-2 text-sm text-text-secondary">
+          <p className="flex h-full items-center justify-center gap-2 text-sm text-ink">
             <Spinner size={12} label="Starting preview" />
             Starting preview…
           </p>
