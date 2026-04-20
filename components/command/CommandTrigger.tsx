@@ -3,11 +3,6 @@
 import { KBD } from "@/components/ui/KBD";
 import { cn } from "@/lib/cn";
 
-/**
- * Visible button that hints at ⌘K and dispatches a `CustomEvent` the
- * palette listens for. Kept decoupled from the palette so any surface can
- * render a trigger without depending on the palette's state.
- */
 export function CommandTrigger({ className }: { className?: string }) {
   function onClick() {
     window.dispatchEvent(new CustomEvent("avr:open-command-palette"));
@@ -17,9 +12,10 @@ export function CommandTrigger({ className }: { className?: string }) {
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-2 border border-border bg-bg px-2 py-1 text-xs text-text-secondary hover:bg-bg-subtle",
+        "inline-flex items-center gap-2 border-2 border-ink bg-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-ink transition-colors hover:bg-ink hover:text-[color:var(--color-accent-ink)]",
         className,
       )}
+      style={{ transitionDuration: "var(--dur-fast, 100ms)" }}
     >
       <span>Commands</span>
       <KBD>⌘K</KBD>

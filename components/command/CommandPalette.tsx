@@ -3,7 +3,7 @@
 import { Command } from "cmdk";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -25,12 +25,9 @@ interface RecentProject {
   library: string;
 }
 
-/**
- * Global command palette. Mounted once (via `layout.tsx`); ⌘K / Ctrl+K
- * toggles it from anywhere. Palette content is context-aware: workspace
- * actions appear when a `WorkspaceProvider` is mounted, plain navigation
- * + library docs appear otherwise.
- */
+const GROUP_CLASS =
+  "px-0 text-ink [&_[cmdk-group-heading]]:border-b-2 [&_[cmdk-group-heading]]:border-ink [&_[cmdk-group-heading]]:bg-surface-subtle [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.15em] [&_[cmdk-group-heading]]:text-ink";
+
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [recent, setRecent] = useState<RecentProject[]>([]);
@@ -39,7 +36,6 @@ export function CommandPalette() {
 
   useCommandShortcut(useCallback(() => setOpen((o) => !o), []));
 
-  // Also listen for programmatic opens fired by `<CommandTrigger>` buttons.
   useEffect(() => {
     const onOpen = () => setOpen(true);
     window.addEventListener("avr:open-command-palette", onOpen);
@@ -47,17 +43,14 @@ export function CommandPalette() {
       window.removeEventListener("avr:open-command-palette", onOpen);
   }, []);
 
-  // Fetch recent projects when opening so the "Projects" group is live.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     fetch("/api/projects")
       .then((res) => (res.ok ? res.json() : { projects: [] }))
-      .then(
-        (data: { projects?: RecentProject[] }) => {
-          if (!cancelled) setRecent((data.projects ?? []).slice(0, 10));
-        },
-      )
+      .then((data: { projects?: RecentProject[] }) => {
+        if (!cancelled) setRecent((data.projects ?? []).slice(0, 10));
+      })
       .catch(() => {
         /* keep previous list */
       });
@@ -84,7 +77,10 @@ export function CommandPalette() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="top-[20%] translate-y-0 sm:max-w-[560px]">
+      <DialogContent
+        wrapperClassName="items-start pt-[14vh]"
+        className="sm:max-w-[600px]"
+      >
         <VisuallyHidden.Root>
           <DialogTitle>Command palette</DialogTitle>
           <DialogDescription>
@@ -93,23 +89,25 @@ export function CommandPalette() {
         </VisuallyHidden.Root>
         <Command
           label="Command palette"
-          className="flex flex-col"
+          className="flex flex-col font-sans"
           loop
         >
-          <Command.Input
-            placeholder="Type a command or search…"
-            className="w-full border-b border-border bg-bg px-3 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none"
-          />
-          <Command.List className="max-h-[360px] overflow-y-auto py-1 text-sm">
-            <Command.Empty className="px-3 py-4 text-center text-xs text-text-tertiary">
-              No matches.
+          <div className="flex items-stretch border-b-2 border-ink">
+            <span className="flex items-center bg-ink px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-accent-ink)]">
+              Cmd
+            </span>
+            <Command.Input
+              placeholder="Type a command or search…"
+              className="w-full bg-surface px-3 py-3 text-sm font-medium text-ink placeholder:font-normal placeholder:text-ink focus:outline-none"
+            />
+          </div>
+          <Command.List className="max-h-[380px] overflow-y-auto text-sm">
+            <Command.Empty className="px-3 py-6 text-center text-xs font-bold uppercase tracking-[0.1em] text-ink">
+              No matches
             </Command.Empty>
 
             {workspaceActions && workspace?.state.project && (
-              <Command.Group
-                heading="Workspace"
-                className="px-1 text-text-tertiary [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-micro [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
-              >
+              <Command.Group heading="Workspace" className={GROUP_CLASS}>
                 {workspace.state.previewRunning ? (
                   <CmdItem
                     label="Stop preview"
@@ -129,8 +127,7 @@ export function CommandPalette() {
                   label="Restart preview"
                   onSelect={() =>
                     run(
-                      () =>
-                        workspaceActions.restartPreview?.() ?? undefined,
+                      () => workspaceActions.restartPreview?.() ?? undefined,
                     )
                   }
                 />
@@ -139,8 +136,7 @@ export function CommandPalette() {
                     label="Cancel render"
                     onSelect={() =>
                       run(
-                        () =>
-                          workspaceActions.cancelRender?.() ?? undefined,
+                        () => workspaceActions.cancelRender?.() ?? undefined,
                       )
                     }
                   />
@@ -149,8 +145,7 @@ export function CommandPalette() {
                     label="Render MP4"
                     onSelect={() =>
                       run(
-                        () =>
-                          workspaceActions.startRender?.() ?? undefined,
+                        () => workspaceActions.startRender?.() ?? undefined,
                       )
                     }
                   />
@@ -190,18 +185,14 @@ export function CommandPalette() {
                   keywords="remove danger"
                   onSelect={() =>
                     run(
-                      () =>
-                        workspaceActions.confirmDelete?.() ?? undefined,
+                      () => workspaceActions.confirmDelete?.() ?? undefined,
                     )
                   }
                 />
               </Command.Group>
             )}
 
-            <Command.Group
-              heading="Navigate"
-              className="px-1 text-text-tertiary [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-micro [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
-            >
+            <Command.Group heading="Navigate" className={GROUP_CLASS}>
               <CmdItem
                 label="New project"
                 keywords="create start"
@@ -223,10 +214,7 @@ export function CommandPalette() {
               ))}
             </Command.Group>
 
-            <Command.Group
-              heading="Library docs"
-              className="px-1 text-text-tertiary [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-micro [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
-            >
+            <Command.Group heading="Library docs" className={GROUP_CLASS}>
               {(Object.keys(LIBRARY_DOCS) as LibraryKey[]).map((lib) => (
                 <CmdItem
                   key={lib}
@@ -241,15 +229,19 @@ export function CommandPalette() {
               ))}
             </Command.Group>
           </Command.List>
-          <footer className="flex items-center justify-between border-t border-border px-3 py-2 text-micro text-text-tertiary">
-            <span className="flex items-center gap-1">
+          <footer className="flex items-center justify-between border-t-2 border-ink bg-surface-subtle px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-ink">
+            <span className="flex items-center gap-1.5">
               <KBD>↑</KBD>
               <KBD>↓</KBD>
-              to navigate
+              <span>Navigate</span>
             </span>
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
+              <KBD>↵</KBD>
+              <span>Select</span>
+            </span>
+            <span className="flex items-center gap-1.5">
               <KBD>Esc</KBD>
-              to close
+              <span>Close</span>
             </span>
           </footer>
         </Command>
@@ -274,8 +266,8 @@ function CmdItem({
       value={`${label} ${keywords ?? ""}`}
       onSelect={onSelect}
       className={cn(
-        "flex cursor-pointer items-center justify-between gap-2 px-2 py-1.5 text-sm text-text-primary",
-        "data-[selected=true]:bg-bg-subtle",
+        "flex cursor-pointer items-center justify-between gap-2 border-b border-ink px-3 py-2.5 text-sm font-medium text-ink last:border-b-0",
+        "data-[selected=true]:bg-ink data-[selected=true]:text-[color:var(--color-accent-ink)]",
       )}
     >
       <span>{label}</span>
