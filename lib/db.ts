@@ -18,6 +18,20 @@ export function getDb(): Database.Database {
 }
 
 function migrate(db: Database.Database): void {
+  // One-off: drop a legacy `messages` schema (role/content_json) that
+  // predates the Kinetic Paper chat-history persistence design. The
+  // current schema below uses `seq`/`kind`/`payload`; if the old shape
+  // exists it's empty and can be dropped without data loss. Skip the
+  // drop as soon as the new schema is live.
+  const messageCols = db
+    .pragma("table_info(messages)") as Array<{ name: string }>;
+  const hasLegacyMessages =
+    messageCols.some((c) => c.name === "role") &&
+    !messageCols.some((c) => c.name === "seq");
+  if (hasLegacyMessages) {
+    db.exec("DROP TABLE messages");
+  }
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS projects (
       id            TEXT PRIMARY KEY,
@@ -43,5 +57,16 @@ function migrate(db: Database.Database): void {
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
     );
     CREATE INDEX IF NOT EXISTS renders_project ON renders(project_id);
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id            TEXT PRIMARY KEY,
+      project_id    TEXT NOT NULL,
+      seq           INTEGER NOT NULL,
+      kind          TEXT NOT NULL,
+      payload       TEXT NOT NULL,
+      created_at    INTEGER NOT NULL,
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS messages_project_seq ON messages(project_id, seq);
   `);
 }

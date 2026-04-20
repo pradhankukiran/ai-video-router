@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { jsonError, parseJsonBody } from "@/lib/http";
+import { appendMessage } from "@/lib/queries/messages";
 import { runSession } from "@/lib/sessions/manager";
 
 export const runtime = "nodejs";
@@ -22,6 +23,8 @@ export async function POST(req: Request, { params }: Ctx) {
   const body = await parseJsonBody(req, bodySchema);
   if (body instanceof Response) return body;
 
+  appendMessage(id, "user-prompt", { text: body.message });
+
   const encoder = new TextEncoder();
   const write = (chunk: unknown) =>
     encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`);
@@ -36,13 +39,18 @@ export async function POST(req: Request, { params }: Ctx) {
           signal: req.signal,
         })) {
           if (aborted()) break;
+          appendMessage(id, "sdk", msg);
           controller.enqueue(write(msg));
         }
-        if (!aborted()) {
+        if (aborted()) {
+          appendMessage(id, "stream-cancelled", {});
+        } else {
+          appendMessage(id, "stream-end", {});
           controller.enqueue(write({ type: "stream-end" }));
         }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
+        appendMessage(id, "stream-error", { error: message });
         controller.enqueue(write({ type: "stream-error", error: message }));
       } finally {
         try {
